@@ -35,11 +35,17 @@ android {
 }
 
 dependencies {
+    // ExoPlayer media player
     def media3Version = "1.0.0-beta01"
-    // For media playback using ExoPlayer
     implementation "androidx.media3:media3-exoplayer:$media3Version"
     implementation "androidx.media3:media3-ui:$media3Version"
     implementation "androidx.media3:media3-session:$media3Version"
+
+    // FFMPEG for conversion to wav (required by Vosk)
+    implementation 'com.arthenica:ffmpeg-kit-audio:4.5.1-1.LTS'
+
+    // Vosk on-device transcription
+    implementation group: 'com.alphacephei', name: 'vosk-android', version: '0.3.38'
 
     implementation 'androidx.core:core-ktx:1.8.0'
     implementation 'androidx.appcompat:appcompat:1.4.2'
