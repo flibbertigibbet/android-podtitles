@@ -12,7 +12,6 @@ android {
         targetSdk 32
         versionCode 1
         versionName "1.0"
-
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -30,7 +29,13 @@ android {
         jvmTarget = '1.8'
     }
     buildFeatures {
+        buildConfig false
         viewBinding true
+    }
+    sourceSets {
+        main {
+            assets.srcDirs += "$buildDir/generated/assets"
+        }
     }
 }
 
@@ -45,7 +50,8 @@ dependencies {
     implementation 'com.arthenica:ffmpeg-kit-audio:4.5.1-1.LTS'
 
     // Vosk on-device transcription
-    implementation group: 'com.alphacephei', name: 'vosk-android', version: '0.3.38'
+    implementation 'com.alphacephei:vosk-android:0.3.38@aar'
+    implementation 'net.java.dev.jna:jna:5.12.1@aar'
 
     implementation 'androidx.core:core-ktx:1.8.0'
     implementation 'androidx.appcompat:appcompat:1.4.2'
@@ -59,3 +65,15 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 }
+
+tasks.register('genUUID') {
+    def uuid = UUID.randomUUID().toString()
+    def odir = file("$buildDir/generated/assets/model-en-us")
+    def ofile = file("$odir/uuid")
+    doLast {
+        mkdir odir
+        ofile.text = uuid
+    }
+}
+
+preBuild.dependsOn(genUUID)

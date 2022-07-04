@@ -97,7 +97,7 @@ class PodTitlesDownloadService : DownloadService(FOREGROUND_NOTIFICATION_ID) {
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent = TaskStackBuilder.create(this).run {
             addNextIntentWithParentStack(intent)
-            getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT)
+            getPendingIntent(0, PendingIntent.FLAG_IMMUTABLE)
         }
         return DownloadNotificationHelper(this, DOWNLOAD_NOTIFICATION_CHANNEL_ID)
             .buildProgressNotification(
