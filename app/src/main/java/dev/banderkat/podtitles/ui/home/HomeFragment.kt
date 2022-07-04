@@ -21,6 +21,7 @@ import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegKitConfig
+import com.arthenica.ffmpegkit.FFmpegSessionCompleteCallback
 import com.arthenica.ffmpegkit.ReturnCode
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.databinding.FragmentHomeBinding
@@ -137,10 +138,14 @@ class HomeFragment : Fragment() {
                     //.setSubtitleConfigurations(ImmutableList.of(subtitle))
                     //.build()
 
-                // TODO: use cache files to build subtitles
-                // val cacheSpans = app.downloadCache.getCachedSpans(mediaItem?.localConfiguration?.customCacheKey!!)
-                // cacheSpans.pollFirst().file!!.absolutePath
+                val wavFiles = app.downloadCache.getCachedSpans(MEDIA_URI).map {
+                    val inputFilePath = it.file!!.absolutePath
+                    val outputFilePath = inputFilePath.trimEnd(*".mp3".toCharArray()) + ".wav"
+                    convertToWav(inputFilePath, outputFilePath)
+                    return@map outputFilePath
+                }
 
+                
                 if (mediaItem != null) exoPlayer.setMediaItem(mediaItem!!)
                 Log.d("MediaPlayer", "have ${exoPlayer.mediaItemCount} item(s) to play >>>>>>>>")
                 exoPlayer.playWhenReady = playWhenReady
@@ -159,24 +164,21 @@ class HomeFragment : Fragment() {
         player = null
     }
 
-    private fun convertToWav() {
+    private fun convertToWav(inputFilePath: String, outputFilePath: String) {
         FFmpegKitConfig.clearSessions()
 
-        val inputPipe = FFmpegKitConfig.registerNewFFmpegPipe(requireContext())
-        val outputPipe = FFmpegKitConfig.registerNewFFmpegPipe(requireContext())
+        //val inputPipe = FFmpegKitConfig.registerNewFFmpegPipe(requireContext())
+        //val outputPipe = FFmpegKitConfig.registerNewFFmpegPipe(requireContext())
 
-        val session = FFmpegKit.execute("FIXME")
-        if (ReturnCode.isSuccess(session.returnCode)) {
-            Log.d("MainFragment", "ffmpeg succeeded!")
-
-        } else if (ReturnCode.isCancel(session.returnCode)) {
-            Log.w("MainFragment", "Got cancel from ffmpeg")
-        } else {
-            Log.e(
-                "MainFragment",
-                "Command failed with state ${session.state} and rc ${session.returnCode}"
+        val session = FFmpegKit.executeAsync("-i $inputFilePath -ac 1 -ar 16000 $outputFilePath"
+        ) { // FIXME: complete callback
+            Log.d(
+                "ffmpeg",
+                "ffmpeg finished. return code: ${it.returnCode} duration: ${it.duration}"
             )
-            Log.e("MainFragment", session.failStackTrace)
+            if (it.failStackTrace != null) {
+                Log.e("ffmpeg", "ffmpeg failed. ${it.failStackTrace}")
+            }
         }
     }
 }
