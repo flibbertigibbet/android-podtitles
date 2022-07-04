@@ -32,11 +32,11 @@ class PodTitlesApplication: Application() {
         )
     }
 
-    val httpDataSourceFactory: HttpDataSource.Factory by lazy {
+    val dataSourceFactory: DefaultDataSource.Factory by lazy {
         val cookieManager = CookieManager()
         cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ORIGINAL_SERVER)
         CookieHandler.setDefault(cookieManager)
-        return@lazy DefaultHttpDataSource.Factory()
+        return@lazy DefaultDataSource.Factory(this)
     }
 
     val downloadManager: DownloadManager by lazy {
@@ -44,7 +44,7 @@ class PodTitlesApplication: Application() {
             this,
             databaseProvider,
             downloadCache,
-            httpDataSourceFactory,
+            dataSourceFactory,
             Runnable::run
         )
     }
@@ -55,7 +55,7 @@ class PodTitlesApplication: Application() {
             .setCache(downloadCache)
             .setUpstreamDataSourceFactory(
                 DefaultDataSource.Factory(
-                this, httpDataSourceFactory)
+                this, dataSourceFactory)
             )
             .setCacheWriteDataSinkFactory(null)
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
