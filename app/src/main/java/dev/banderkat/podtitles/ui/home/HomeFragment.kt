@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.ExoPlayer
@@ -21,6 +22,7 @@ import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.arthenica.ffmpegkit.*
+import com.google.common.collect.ImmutableList
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.databinding.FragmentHomeBinding
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
@@ -28,20 +30,28 @@ import dev.banderkat.podtitles.player.PodTitlesDownloadService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import org.vosk.Model
 import org.vosk.Recognizer
 import org.vosk.android.RecognitionListener
 import org.vosk.android.SpeechStreamService
 import org.vosk.android.StorageService
-import java.io.FileInputStream
-import java.io.IOException
-import java.lang.Exception
+import org.w3c.dom.Document
+import org.w3c.dom.Element
+import java.io.*
+import javax.xml.parsers.DocumentBuilderFactory
+import javax.xml.transform.ErrorListener
+import javax.xml.transform.TransformerException
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.dom.DOMSource
+import javax.xml.transform.stream.StreamResult
 
 const val MEDIA_URI = "https://storage.googleapis.com/exoplayer-test-media-0/play.mp3"
 const val FFMPEG_PARAMS = "-ac 1 -ar 16000"
 const val VOSK_HZ = 16000.0f
 const val VOSK_MODEL_ASSET = "model-en-us"
 const val VOSK_MODEL_NAME = "model"
+const val SUBTITLE_FILE_NAME = "subtitles.ttml"
 
 class HomeFragment : Fragment(), RecognitionListener {
 
@@ -58,6 +68,11 @@ class HomeFragment : Fragment(), RecognitionListener {
     private var voskModel: Model? = null
     private var voskRecognizer: Recognizer? = null
     private var voskSpeechStreamService: SpeechStreamService? = null
+
+    private val xmlDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+    private var subtitleDocument: Document? = xmlDocumentBuilder.newDocument()
+    private var ttmlParent: Element? = null
+    private var resultsCounter = 0
 
     private val downloadCompleteBroadcast: BroadcastReceiver = object: BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -153,28 +168,63 @@ class HomeFragment : Fragment(), RecognitionListener {
             .build()
             .also { exoPlayer ->
                 binding.exoPlayer.player = exoPlayer
-                //val subtitle = MediaItem.SubtitleConfiguration.Builder(Uri.parse(""))
-                //    .build()
-                //val mediaItem = MediaItem
-                  //  .Builder()
-                  //  .setMediaId(MEDIA_URI)
-                  //  .setUri(MEDIA_URI)
-                    //.setSubtitleConfigurations(ImmutableList.of(subtitle))
-                    //.build()
 
-                val wavFiles = app.downloadCache.getCachedSpans(MEDIA_URI).map {
-                    val inputFilePath = it.file!!.absolutePath
-                    val outputFilePath = inputFilePath.trimEnd(*".mp3".toCharArray()) + ".wav"
-                    convertToWav(inputFilePath, outputFilePath)
-                    return@map outputFilePath
+                if (exoPlayer.trackSelector == null) {
+                    Log.d("Player", "track selector is null")
+                } else if (exoPlayer.trackSelector?.parameters == null) {
+                    Log.d("Player", "track selector parameters are null")
                 }
 
-                if (mediaItem != null) exoPlayer.setMediaItem(mediaItem!!)
-                Log.d("MediaPlayer", "have ${exoPlayer.mediaItemCount} item(s) to play >>>>>>>>")
-                exoPlayer.playWhenReady = playWhenReady
-                exoPlayer.seekTo(currentItem, playbackPosition)
-                exoPlayer.prepare()
+                exoPlayer.trackSelector?.parameters = exoPlayer.trackSelector!!.parameters.buildUpon()
+                    .setPreferredTextLanguage("en").build()
+
+                app.downloadCache.getCachedSpans(MEDIA_URI).forEach {
+                    val inputFilePath = it.file!!.absolutePath
+                    Log.d("Player", "Input file path is: $inputFilePath")
+                    val outputFilePath = inputFilePath.trimEnd(*".mp3".toCharArray()) + ".wav"
+                    convertToWav(inputFilePath, outputFilePath)
+                }
             }
+    }
+
+    private fun startPlayer() {
+
+        if (mediaItem == null || player == null) return
+
+        val absPath = requireContext().getFileStreamPath(SUBTITLE_FILE_NAME).absolutePath
+        Log.d("Player", "Absolute path to subtitles: $absPath")
+        val subtitleUri = Uri.fromFile(File(absPath))
+        Log.d("Player", "Got path to subtitles: $subtitleUri")
+
+
+
+        requireContext().openFileInput(SUBTITLE_FILE_NAME).use { stream ->
+            val text = stream.bufferedReader().use {
+                it.readText()
+            }
+
+            Log.d("Player", "Read from subtitles file: ${text}")
+        }
+
+        Log.d("Player", "Existing media item URI: ${mediaItem?.localConfiguration?.uri}")
+
+        val subtitle = MediaItem.SubtitleConfiguration.Builder(subtitleUri)
+            .setMimeType(MimeTypes.APPLICATION_TTML)
+            .build()
+
+        val subbedMedia = MediaItem
+            .Builder()
+            .setUri(mediaItem?.localConfiguration?.uri)
+            .setSubtitleConfigurations(ImmutableList.of(subtitle))
+            .build()
+
+        player?.apply {
+            setMediaItem(subbedMedia)
+            Log.d("MediaPlayer", "ready to play  >>>>>>>>>>>>")
+            playWhenReady = playWhenReady
+            seekTo(currentItem, playbackPosition)
+            prepare()
+        }
     }
 
     private fun releasePlayer() {
@@ -221,8 +271,22 @@ class HomeFragment : Fragment(), RecognitionListener {
     }
 
     private suspend fun recognizeVosk(inputFilePath: String) = withContext(Dispatchers.IO) {
+        // see TTML format docs: https://www.w3.org/TR/ttml2/
+        subtitleDocument = xmlDocumentBuilder.newDocument()
+        subtitleDocument?.apply {
+            val body = createElement("body")
+            val regionAttr = createAttribute("region")
+            regionAttr.value = "subtitleArea"
+            body.setAttributeNode(regionAttr)
+            appendChild(body)
+
+            ttmlParent = createElement("div")
+            body.appendChild(ttmlParent)
+        }
+
         Log.d("Vosk", "creating Vosk recognizer")
         voskRecognizer = Recognizer(voskModel, VOSK_HZ)
+        voskRecognizer?.setWords(true) // include timestamps on results
         val fileStream = FileInputStream(inputFilePath)
         voskSpeechStreamService = SpeechStreamService(voskRecognizer, fileStream, VOSK_HZ)
         Log.d("Vosk", "starting Vosk stream service")
@@ -236,10 +300,71 @@ class HomeFragment : Fragment(), RecognitionListener {
 
     override fun onResult(hypothesis: String?) {
         Log.d("Vosk", "result: $hypothesis")
+        if (hypothesis.isNullOrEmpty()) return
+
+        val json = JSONObject(hypothesis)
+        val resultText = json.getString("text")
+        if (resultText.isNullOrEmpty()) return
+
+        resultsCounter++
+        val resultJson = json.getJSONArray("result")
+        subtitleDocument?.apply {
+            val paragraph = createElement("p")
+            val idAttr = createAttribute("xml:id")
+            idAttr.value = "subtitle$resultsCounter"
+            paragraph.setAttributeNode(idAttr)
+            val beginAttr = createAttribute("begin")
+            val endAttr = createAttribute("end")
+            val firstWord = resultJson.getJSONObject(0)
+            val lastWord = resultJson.getJSONObject(resultJson.length() - 1)
+            val startStr = String.format("%.2f", firstWord.get("start"))
+            val endStr = String.format("%.2f", lastWord.get("end"))
+            beginAttr.value = "${startStr}s"
+            endAttr.value = "${endStr}s"
+            paragraph.setAttributeNode(beginAttr)
+            paragraph.setAttributeNode(endAttr)
+            paragraph.appendChild(createTextNode(resultText))
+            ttmlParent?.appendChild(paragraph)
+        }
     }
 
     override fun onFinalResult(hypothesis: String?) {
         Log.d("Vosk", "final result: $hypothesis")
+
+        val transformer = TransformerFactory.newInstance().newTransformer()
+        transformer.errorListener = object: ErrorListener {
+            override fun warning(p0: TransformerException?) {
+                Log.w("Vosk", "transformer warning", p0)
+            }
+
+            override fun error(p0: TransformerException?) {
+                Log.e("Vosk", "transformer error", p0)
+            }
+
+            override fun fatalError(p0: TransformerException?) {
+                Log.e("Vosk", "transformer fatal error", p0)
+            }
+        }
+
+        // val app = requireActivity().application as PodTitlesApplication
+        // FIXME
+
+        requireContext().openFileOutput(SUBTITLE_FILE_NAME, Context.MODE_PRIVATE).use {
+            val writer = StreamResult(StringWriter())
+
+            val result = StreamResult(it)
+            val domSource = DOMSource(subtitleDocument)
+
+            transformer.transform(domSource, writer)
+
+            val xmlStr = writer.writer.toString()
+            Log.d("Vosk", "generated subtitle doc:")
+            Log.d("Vosk", xmlStr)
+
+            transformer.transform(domSource, result)
+        }
+
+        startPlayer()
     }
 
     override fun onError(exception: Exception?) {
