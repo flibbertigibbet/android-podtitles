@@ -13,15 +13,20 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.media3.common.C.SELECTION_FLAG_AUTOSELECT
+import androidx.media3.common.C.TRACK_TYPE_DEFAULT
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import com.arthenica.ffmpegkit.*
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFmpegKitConfig
+import com.arthenica.ffmpegkit.Session
 import com.google.common.collect.ImmutableList
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.databinding.FragmentHomeBinding
@@ -38,7 +43,10 @@ import org.vosk.android.SpeechStreamService
 import org.vosk.android.StorageService
 import org.w3c.dom.Document
 import org.w3c.dom.Element
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.IOException
+import java.io.StringWriter
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.ErrorListener
 import javax.xml.transform.TransformerException
@@ -74,7 +82,7 @@ class HomeFragment : Fragment(), RecognitionListener {
     private var ttmlParent: Element? = null
     private var resultsCounter = 0
 
-    private val downloadCompleteBroadcast: BroadcastReceiver = object: BroadcastReceiver() {
+    private val downloadCompleteBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             Log.d("Home", "download complete broadcast received")
             initializePlayer()
@@ -105,17 +113,15 @@ class HomeFragment : Fragment(), RecognitionListener {
 
     override fun onStart() {
         super.onStart()
-        requireActivity().registerReceiver(downloadCompleteBroadcast, IntentFilter(DOWNLOAD_FINISHED_ACTION))
+        requireActivity().registerReceiver(
+            downloadCompleteBroadcast,
+            IntentFilter(DOWNLOAD_FINISHED_ACTION)
+        )
 
         initializeVosk()
         sendDownloadRequest()
 
         // initializePlayer()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // if (player == null) initializePlayer()
     }
 
     override fun onPause() {
@@ -156,7 +162,7 @@ class HomeFragment : Fragment(), RecognitionListener {
         val app = requireActivity().application as PodTitlesApplication
         val cacheDataSourceFactory: DataSource.Factory = CacheDataSource.Factory()
             .setCache(app.downloadCache)
-            .setUpstreamDataSourceFactory(app.httpDataSourceFactory)
+            .setUpstreamDataSourceFactory(app.dataSourceFactory)
             .setCacheWriteDataSinkFactory(null) // Disable writing.
 
 
@@ -169,14 +175,12 @@ class HomeFragment : Fragment(), RecognitionListener {
             .also { exoPlayer ->
                 binding.exoPlayer.player = exoPlayer
 
-                if (exoPlayer.trackSelector == null) {
-                    Log.d("Player", "track selector is null")
-                } else if (exoPlayer.trackSelector?.parameters == null) {
-                    Log.d("Player", "track selector parameters are null")
-                }
-
-                exoPlayer.trackSelector?.parameters = exoPlayer.trackSelector!!.parameters.buildUpon()
-                    .setPreferredTextLanguage("en").build()
+                exoPlayer.trackSelector?.parameters = TrackSelectionParameters
+                    .getDefaults(requireContext())
+                    .buildUpon()
+                    .setPreferredTextLanguage("en") // will not display if language not set
+                    .setTrackTypeDisabled(TRACK_TYPE_DEFAULT, true) // otherwise doubled
+                    .build()
 
                 app.downloadCache.getCachedSpans(MEDIA_URI).forEach {
                     val inputFilePath = it.file!!.absolutePath
@@ -210,6 +214,8 @@ class HomeFragment : Fragment(), RecognitionListener {
 
         val subtitle = MediaItem.SubtitleConfiguration.Builder(subtitleUri)
             .setMimeType(MimeTypes.APPLICATION_TTML)
+            .setLanguage("en")
+            .setSelectionFlags(SELECTION_FLAG_AUTOSELECT)
             .build()
 
         val subbedMedia = MediaItem
@@ -241,7 +247,8 @@ class HomeFragment : Fragment(), RecognitionListener {
         FFmpegKitConfig.clearSessions()
 
         // Vosk requires 16Hz mono PCM wav
-        val ffmpegSession = FFmpegKit.executeAsync("-i $inputFilePath $FFMPEG_PARAMS $outputFilePath"
+        val ffmpegSession = FFmpegKit.executeAsync(
+            "-i $inputFilePath $FFMPEG_PARAMS $outputFilePath"
         ) {
             Log.d(
                 "ffmpeg",
@@ -274,11 +281,15 @@ class HomeFragment : Fragment(), RecognitionListener {
         // see TTML format docs: https://www.w3.org/TR/ttml2/
         subtitleDocument = xmlDocumentBuilder.newDocument()
         subtitleDocument?.apply {
+            val tt = createElement("tt")
+            val ttAttr = createAttribute("xmlns")
+            ttAttr.value = "http://www.w3.org/ns/ttml"
             val body = createElement("body")
             val regionAttr = createAttribute("region")
             regionAttr.value = "subtitleArea"
             body.setAttributeNode(regionAttr)
-            appendChild(body)
+            tt.appendChild(body)
+            appendChild(tt)
 
             ttmlParent = createElement("div")
             body.appendChild(ttmlParent)
@@ -332,7 +343,7 @@ class HomeFragment : Fragment(), RecognitionListener {
         Log.d("Vosk", "final result: $hypothesis")
 
         val transformer = TransformerFactory.newInstance().newTransformer()
-        transformer.errorListener = object: ErrorListener {
+        transformer.errorListener = object : ErrorListener {
             override fun warning(p0: TransformerException?) {
                 Log.w("Vosk", "transformer warning", p0)
             }
