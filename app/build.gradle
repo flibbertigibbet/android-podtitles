@@ -48,6 +48,7 @@ dependencies {
     implementation "androidx.media3:media3-decoder:$media3_version"
     implementation "androidx.media3:media3-datasource:$media3_version"
     implementation "androidx.media3:media3-common:$media3_version"
+    implementation "androidx.media3:media3-exoplayer-workmanager:$media3_version"
 
     // ffmpeg for conversion to wav (format required by Vosk)
     implementation 'com.arthenica:ffmpeg-kit-audio:4.5.1-1.LTS'
