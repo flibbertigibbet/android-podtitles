@@ -15,6 +15,7 @@ import dev.banderkat.podtitles.MainActivity
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.R
 
+const val TAG = "PlayerDownloader"
 const val FOREGROUND_NOTIFICATION_ID = 4001
 const val PLATFORM_SCHEDULER_JOB_ID = 8001
 const val DOWNLOAD_NOTIFICATION_CHANNEL_ID = "download_channel"
@@ -32,25 +33,7 @@ class PodTitlesDownloadService : DownloadService(FOREGROUND_NOTIFICATION_ID) {
             waitingForRequirements: Boolean
         ) {
             super.onWaitingForRequirementsChanged(downloadManager, waitingForRequirements)
-            Log.d("PodDownloader", "waiting for requirements: ${waitingForRequirements}")
-        }
-
-        override fun onInitialized(downloadManager: DownloadManager) {
-            super.onInitialized(downloadManager)
-            Log.d("PodDownloader", "download initialized!!!!!!!!!!!!!!!!!!!!!!!")
-        }
-
-        override fun onDownloadsPausedChanged(
-            downloadManager: DownloadManager,
-            downloadsPaused: Boolean
-        ) {
-            super.onDownloadsPausedChanged(downloadManager, downloadsPaused)
-            Log.d("PodDownloader", "downloads paused? $downloadsPaused")
-        }
-
-        override fun onIdle(downloadManager: DownloadManager) {
-            super.onIdle(downloadManager)
-            Log.d("PodDownloader", "idling .....................................")
+            Log.d(TAG, "waiting for requirements: ${waitingForRequirements}")
         }
 
         override fun onDownloadChanged(
@@ -60,19 +43,18 @@ class PodTitlesDownloadService : DownloadService(FOREGROUND_NOTIFICATION_ID) {
         ) {
             super.onDownloadChanged(downloadManager, download, finalException)
             val stateString = when (download.state) {
-                Download.STATE_DOWNLOADING -> "downloading ~~~~~~~~~~~~~"
-                Download.STATE_COMPLETED -> "completed :-))))))))))"
-                Download.STATE_FAILED -> "FAILED :-((((((("
-                Download.STATE_QUEUED -> "queued . . . ."
-                Download.STATE_STOPPED -> "stopped ? ? ? ?"
-                else -> {
-                    "unknown   ?!?!?"
-                }
+                Download.STATE_DOWNLOADING -> "downloading"
+                Download.STATE_COMPLETED -> "completed"
+                Download.STATE_FAILED -> "failed"
+                Download.STATE_QUEUED -> "queued"
+                Download.STATE_STOPPED -> "stopped"
+                Download.STATE_REMOVING -> "removing"
+                Download.STATE_RESTARTING -> "restarting"
+                else -> "unrecognized download state: ${download.state}"
             }
-            Log.d("PodDownloader", "download changed. state: $stateString")
+            Log.d(TAG, "download state changed: $stateString")
 
             if (download.state == Download.STATE_COMPLETED) {
-                Log.d("PodDownloader", "YAY DOWNLOAD FINISHED")
                 sendBroadcast(Intent().setAction(DOWNLOAD_FINISHED_ACTION))
             }
         }

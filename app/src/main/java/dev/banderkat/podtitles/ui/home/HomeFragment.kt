@@ -153,7 +153,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun startPlayer() {
-
         if (mediaItem == null || player == null) return
 
         val subtitleUri = Uri.fromFile(File(subtitleFilePath))
