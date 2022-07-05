@@ -41,20 +41,25 @@ android {
 
 dependencies {
     // ExoPlayer media player
-    def media3Version = "1.0.0-beta01"
-    implementation "androidx.media3:media3-exoplayer:$media3Version"
-    implementation "androidx.media3:media3-ui:$media3Version"
-    implementation "androidx.media3:media3-session:$media3Version"
-    implementation "androidx.media3:media3-decoder:$media3Version"
-    implementation "androidx.media3:media3-datasource:$media3Version"
-    implementation "androidx.media3:media3-common:$media3Version"
+    def media3_version = "1.0.0-beta01"
+    implementation "androidx.media3:media3-exoplayer:$media3_version"
+    implementation "androidx.media3:media3-ui:$media3_version"
+    implementation "androidx.media3:media3-session:$media3_version"
+    implementation "androidx.media3:media3-decoder:$media3_version"
+    implementation "androidx.media3:media3-datasource:$media3_version"
+    implementation "androidx.media3:media3-common:$media3_version"
 
-    // FFMPEG for conversion to wav (required by Vosk)
+    // ffmpeg for conversion to wav (format required by Vosk)
     implementation 'com.arthenica:ffmpeg-kit-audio:4.5.1-1.LTS'
 
     // Vosk on-device transcription
     implementation 'com.alphacephei:vosk-android:0.3.38@aar'
     implementation 'net.java.dev.jna:jna:5.12.1@aar'
+
+    // WorkManager
+    def work_version = "2.7.1"
+    implementation "androidx.work:work-runtime-ktx:$work_version"
+    implementation "androidx.work:work-multiprocess:$work_version"
 
     implementation 'androidx.core:core-ktx:1.8.0'
     implementation 'androidx.appcompat:appcompat:1.4.2'
@@ -67,6 +72,13 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+
+    androidTestImplementation "androidx.work:work-testing:$work_version"
+
+    // Utilities for testing media components (including ExoPlayer components)
+    implementation "androidx.media3:media3-test-utils:$media3_version"
+    // Utilities for testing media components (including ExoPlayer components) via Robolectric
+    implementation "androidx.media3:media3-test-utils-robolectric:$media3_version"
 }
 
 tasks.register('genUUID') {
