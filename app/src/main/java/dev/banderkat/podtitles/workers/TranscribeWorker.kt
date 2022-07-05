@@ -5,6 +5,8 @@ import android.util.Log
 import androidx.work.Data
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFmpegKitConfig
 import com.google.common.collect.ImmutableMap
 import org.json.JSONObject
 import org.vosk.Model
@@ -14,6 +16,7 @@ import org.w3c.dom.Document
 import org.w3c.dom.Element
 import java.io.File
 import java.io.FileInputStream
+import java.io.IOException
 import java.io.StringWriter
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.ErrorListener
@@ -24,6 +27,7 @@ import javax.xml.transform.stream.StreamResult
 import kotlin.math.roundToInt
 
 const val TAG = "TranscribeWorker"
+const val FFMPEG_PARAMS = "-ac 1 -ar 16000 -f wav -y"
 const val SAMPLE_RATE = 16000.0f
 const val BUFFER_SIZE_SECONDS = 0.2f
 const val VOSK_MODEL_ASSET = "model-en-us"
@@ -42,16 +46,22 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
     private var subtitleDocument: Document? = xmlDocumentBuilder.newDocument()
     private var ttmlParent: Element? = null
     private var resultsCounter = 0
+    private var outputPipe: String? = null
 
     override fun doWork(): Result {
         try {
             val inputPath = inputData.getString(AUDIO_FILE_PATH_PARAM) ?: return Result.failure()
+            Log.d(TAG, "going to transcribe audio from $inputPath")
             createSubtitleDocument()
             val outputPath = recognize(inputPath)
             return Result.success(Data(ImmutableMap.of(SUBTITLE_FILE_PATH_PARAM, outputPath)))
         } catch (ex: Exception) {
             Log.e(TAG, "Vosk transcription failed", ex)
             return Result.failure()
+        } finally {
+            if (!outputPipe.isNullOrEmpty()) {
+                FFmpegKitConfig.closeFFmpegPipe(outputPipe)
+            }
         }
     }
 
@@ -63,7 +73,10 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
         val recognizer = Recognizer(model, SAMPLE_RATE)
         recognizer.setWords(true) // include timestamps
 
-        val inputStream = FileInputStream(inputFilePath)
+        // Vosk requires 16Hz mono PCM wav. Pipe input file through ffmpeg to convert it
+        pipeFFMPEG(inputFilePath)
+
+        val inputStream = FileInputStream(outputPipe)
         val bufferSize = (SAMPLE_RATE * BUFFER_SIZE_SECONDS * 2).roundToInt()
         val buffer = ByteArray(bufferSize)
 
@@ -82,6 +95,23 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
 
         handleFinalResult(recognizer.finalResult, outputFilePath)
         return applicationContext.getFileStreamPath(outputFilePath).absolutePath
+    }
+
+    private fun pipeFFMPEG(inputFilePath: String) {
+        outputPipe = FFmpegKitConfig.registerNewFFmpegPipe(applicationContext)
+        FFmpegKit.executeAsync(
+            "-i $inputFilePath $FFMPEG_PARAMS $outputPipe"
+        ) {
+            Log.d(
+                TAG,
+                "ffmpeg finished. return code: ${it.returnCode} duration: ${it.duration}"
+            )
+
+            if (it.failStackTrace != null) {
+                Log.e(TAG, "ffmpeg failed: ${it.failStackTrace}")
+                throw IOException(it.failStackTrace)
+            }
+        }
     }
 
     private fun createSubtitleDocument() {
@@ -152,7 +182,7 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
             }
         }
 
-        // write to file
+        // write subtitles to file
         applicationContext.openFileOutput(outputFilePath, Context.MODE_PRIVATE).use {
             // TODO: remove debug logging
             val writer = StreamResult(StringWriter())

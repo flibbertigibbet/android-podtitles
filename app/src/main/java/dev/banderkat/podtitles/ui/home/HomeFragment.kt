@@ -24,9 +24,6 @@ import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.work.*
-import com.arthenica.ffmpegkit.FFmpegKit
-import com.arthenica.ffmpegkit.FFmpegKitConfig
-import com.arthenica.ffmpegkit.Session
 import com.google.common.collect.ImmutableList
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.databinding.FragmentHomeBinding
@@ -38,7 +35,6 @@ import dev.banderkat.podtitles.workers.TranscribeWorker
 import java.io.File
 
 const val MEDIA_URI = "https://storage.googleapis.com/exoplayer-test-media-0/play.mp3"
-const val FFMPEG_PARAMS = "-ac 1 -ar 16000"
 
 class HomeFragment : Fragment() {
 
@@ -50,7 +46,6 @@ class HomeFragment : Fragment() {
     private var playbackPosition = 0L
 
     private var mediaItem: MediaItem? = null
-    private var ffmpegSession: Session? = null
     private var subtitleFilePath: String? = null
 
     private val downloadCompleteBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
@@ -152,8 +147,7 @@ class HomeFragment : Fragment() {
                 app.downloadCache.getCachedSpans(MEDIA_URI).forEach {
                     val inputFilePath = it.file!!.absolutePath
                     Log.d("Player", "Input file path is: $inputFilePath")
-                    val outputFilePath = inputFilePath.trimEnd(*".mp3".toCharArray()) + ".wav"
-                    convertToWav(inputFilePath, outputFilePath)
+                    transcribe(inputFilePath)
                 }
             }
     }
@@ -164,6 +158,7 @@ class HomeFragment : Fragment() {
 
         val subtitleUri = Uri.fromFile(File(subtitleFilePath))
         Log.d("Player", "Got path to subtitles: $subtitleUri")
+
         Log.d("Player", "Existing media item URI: ${mediaItem?.localConfiguration?.uri}")
 
         val subtitle = MediaItem.SubtitleConfiguration.Builder(subtitleUri)
@@ -197,62 +192,42 @@ class HomeFragment : Fragment() {
         player = null
     }
 
-    private fun convertToWav(inputFilePath: String, outputFilePath: String) {
-        FFmpegKitConfig.clearSessions()
+    private fun transcribe(inputFilePath: String) {
+        // launch transcription worker
+        val transcribeRequest = OneTimeWorkRequestBuilder<TranscribeWorker>()
+            .setInputData(workDataOf(AUDIO_FILE_PATH_PARAM to inputFilePath))
+            .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
+            .addTag("transcribe") // TODO: move
+            .build()
 
-        // Vosk requires 16Hz mono PCM wav
-        val ffmpegSession = FFmpegKit.executeAsync(
-            "-i $inputFilePath $FFMPEG_PARAMS $outputFilePath"
-        ) {
-            Log.d(
-                "ffmpeg",
-                "ffmpeg finished. return code: ${it.returnCode} duration: ${it.duration}"
-            )
+        val workManager = WorkManager.getInstance(requireContext())
+        workManager.enqueue(transcribeRequest)
 
-            // TODO: cleanup. delete wav file once transcription complete
-
-            if (it.failStackTrace != null) {
-                Log.e("ffmpeg", "ffmpeg failed. ${it.failStackTrace}")
-            } else {
-                // launch transcription worker
-                val transcribeRequest = OneTimeWorkRequestBuilder<TranscribeWorker>()
-                    .setInputData(workDataOf(AUDIO_FILE_PATH_PARAM to outputFilePath))
-                    .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
-                    .addTag("transcribe") // TODO: move
-                    .build()
-
-                val workManager = WorkManager.getInstance(requireContext())
-                workManager.enqueue(transcribeRequest)
-
-                requireActivity().runOnUiThread {
-                    workManager
-                        .getWorkInfoByIdLiveData(transcribeRequest.id)
-                        .observe(viewLifecycleOwner) { workInfo ->
-                            when (workInfo?.state) {
-                                WorkInfo.State.SUCCEEDED -> {
-                                    val subtitlePath = workInfo.outputData.getString(
-                                        SUBTITLE_FILE_PATH_PARAM
-                                    )
-                                    Log.d(
-                                        "HomeFragment",
-                                        "Transcription worker successfully wrote file $subtitlePath"
-                                    )
-                                    subtitleFilePath = subtitlePath
-                                    startPlayer()
-                                }
-                                WorkInfo.State.FAILED -> {
-                                    Log.e("HomeFragment", "Transcription worker failed")
-                                }
-                                else -> {
-                                    Log.d(
-                                        "HomeFragment",
-                                        "Transcription worker moved to state ${workInfo?.state}"
-                                    )
-                                }
-                            }
-                        }
+        workManager
+            .getWorkInfoByIdLiveData(transcribeRequest.id)
+            .observe(viewLifecycleOwner) { workInfo ->
+                when (workInfo?.state) {
+                    WorkInfo.State.SUCCEEDED -> {
+                        val subtitlePath = workInfo.outputData.getString(
+                            SUBTITLE_FILE_PATH_PARAM
+                        )
+                        Log.d(
+                            "HomeFragment",
+                            "Transcription worker successfully wrote file $subtitlePath"
+                        )
+                        subtitleFilePath = subtitlePath
+                        startPlayer()
+                    }
+                    WorkInfo.State.FAILED -> {
+                        Log.e("HomeFragment", "Transcription worker failed")
+                    }
+                    else -> {
+                        Log.d(
+                            "HomeFragment",
+                            "Transcription worker moved to state ${workInfo?.state}"
+                        )
+                    }
                 }
             }
-        }
     }
 }
