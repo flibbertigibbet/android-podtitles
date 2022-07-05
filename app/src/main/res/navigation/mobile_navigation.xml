@@ -7,19 +7,7 @@
 
     <fragment
         android:id="@+id/navigation_home"
-        android:name="dev.banderkat.podtitles.ui.home.HomeFragment"
-        android:label="@string/title_home"
-        tools:layout="@layout/fragment_home" />
-
-    <fragment
-        android:id="@+id/navigation_dashboard"
-        android:name="dev.banderkat.podtitles.ui.dashboard.DashboardFragment"
-        android:label="@string/title_dashboard"
-        tools:layout="@layout/fragment_dashboard" />
-
-    <fragment
-        android:id="@+id/navigation_notifications"
-        android:name="dev.banderkat.podtitles.ui.notifications.NotificationsFragment"
-        android:label="@string/title_notifications"
-        tools:layout="@layout/fragment_notifications" />
+        android:name="dev.banderkat.podtitles.episode.EpisodeFragment"
+        android:label="@string/title_episode"
+        tools:layout="@layout/fragment_episode" />
 </navigation>
