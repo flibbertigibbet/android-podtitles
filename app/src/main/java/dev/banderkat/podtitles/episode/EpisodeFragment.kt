@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.media3.common.C.SELECTION_FLAG_AUTOSELECT
 import androidx.media3.common.C.TRACK_TYPE_DEFAULT
 import androidx.media3.common.MediaItem
@@ -30,6 +31,7 @@ import dev.banderkat.podtitles.databinding.FragmentEpisodeBinding
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
 import dev.banderkat.podtitles.player.PodTitlesDownloadService
 import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
+import dev.banderkat.podtitles.workers.PodcastFeedParser
 import dev.banderkat.podtitles.workers.SUBTITLE_FILE_PATH_PARAM
 import dev.banderkat.podtitles.workers.TranscribeWorker
 import java.io.File
@@ -65,7 +67,7 @@ class EpisodeFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         val episodeViewModel =
-            ViewModelProvider(this).get(EpisodeViewModel::class.java)
+            ViewModelProvider(this)[EpisodeViewModel::class.java]
 
         _binding = FragmentEpisodeBinding.inflate(inflater, container, false)
         val root: View = binding.root
@@ -84,9 +86,9 @@ class EpisodeFragment : Fragment() {
             IntentFilter(DOWNLOAD_FINISHED_ACTION)
         )
 
-        sendDownloadRequest()
-
-        // initializePlayer()
+        // FIXME
+        PodcastFeedParser().parseFeed(requireContext())
+        // sendDownloadRequest()
     }
 
     override fun onPause() {
