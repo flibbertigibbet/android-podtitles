@@ -19,7 +19,8 @@ import java.net.CookieManager
 import java.net.CookiePolicy
 
 class PodTitlesApplication: Application() {
-
+    
+    // Cache management singletons for ExoPlayer
     val databaseProvider: DatabaseProvider by lazy {
         StandaloneDatabaseProvider(this)
     }
