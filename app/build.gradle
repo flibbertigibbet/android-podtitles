@@ -71,6 +71,9 @@ dependencies {
     // Room
     def room_version = "2.4.2"
 
+    // Kotlin reflection, for dynamic object construction from XML
+    implementation "org.jetbrains.kotlin:kotlin-reflect:1.7.0"
+
     implementation "androidx.room:room-runtime:$room_version"
     annotationProcessor "androidx.room:room-compiler:$room_version"
     implementation "androidx.room:room-paging:2.5.0-alpha02"

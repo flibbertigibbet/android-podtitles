@@ -3,9 +3,14 @@ package dev.banderkat.podtitles.workers
 import android.content.Context
 import android.util.Log
 import android.util.Xml
+import dev.banderkat.podtitles.models.PodEpisode
+import dev.banderkat.podtitles.models.PodFeed
+import dev.banderkat.podtitles.utils.createInstance
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import java.io.IOException
+
+data class TestMe (val one: String, val two: Int)
 
 
 /**
@@ -48,7 +53,7 @@ class PodcastFeedParser {
     }
 
     // Map of PodFeed DB field names to values read
-    private val channelMap = mutableMapOf<String, Any>()
+    private val channelMap = mutableMapOf<String, Any>("id" to 0, "ttl" to 0, "complete" to false)
 
     // Read the top-level channel info
     private fun readChannel() {
@@ -111,6 +116,11 @@ class PodcastFeedParser {
         channelMap.forEach { (key, value) ->
             Log.d(TAG, "$key : $value")
         }
+
+        // FIXME
+        //val pod = PodFeed::class.createInstance(channelMap)
+        //Log.d(TAG, "Created pod $pod")
+
     }
 
     // Read a single episode
@@ -137,7 +147,8 @@ class PodcastFeedParser {
         )
 
         // Map of PodEpisode DB field names to values read
-        val itemMap = mutableMapOf<String, Any>()
+        // TODO: get FK ID first?
+        val itemMap = mutableMapOf<String, Any>("id" to 0, "feedId" to 0)
 
         @Throws(IOException::class, XmlPullParserException::class)
         fun readEnclosure() {
@@ -191,6 +202,10 @@ class PodcastFeedParser {
         itemMap.forEach { (key, value) ->
             Log.d(TAG, "$key : $value")
         }
+
+        // TODO
+        //val item = PodEpisode::class.createInstance(itemMap)
+        //Log.d(TAG, "Created episode: $item")
     }
 
     // FIXME: read the first category and subcategory, if present

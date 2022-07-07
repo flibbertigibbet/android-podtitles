@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import dev.banderkat.podtitles.utils.DynamicInitializer
 
 const val EPISODE_TABLE_NAME = "episode"
 /**
@@ -37,4 +38,8 @@ data class PodEpisode constructor(
     val episode: Int?,
     val season: Int?,
     val episodeType: String?
-)
+) {
+    override fun toString(): String {
+        return "PodEpisode id: $id guid: $guid title: $title"
+    }
+}
