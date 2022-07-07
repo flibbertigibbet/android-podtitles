@@ -4,10 +4,11 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+const val FEED_TABLE_NAME = "feed"
 /**
  * Holds the top-level RSS channel element properties for a feed, plus its URL
  */
-@Entity(tableName = "feed")
+@Entity(tableName = FEED_TABLE_NAME)
 data class PodFeed (
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
@@ -20,9 +21,11 @@ data class PodFeed (
     @ColumnInfo(index = true)
     val language: String?,
     val category: String?,
+    val subCategory: String?,
     val author: String?,
     val link: String?,
     val copyright: String?,
+    @ColumnInfo(defaultValue = "0")
     val ttl: Int = 0,
     val pubDate: String?,
     val complete: Boolean = false

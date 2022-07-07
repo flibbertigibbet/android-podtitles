@@ -76,11 +76,6 @@ class EpisodeFragment : Fragment() {
             // FIXME: remove
         }
 
-        return root
-    }
-
-    override fun onStart() {
-        super.onStart()
         requireActivity().registerReceiver(
             downloadCompleteBroadcast,
             IntentFilter(DOWNLOAD_FINISHED_ACTION)
@@ -89,6 +84,8 @@ class EpisodeFragment : Fragment() {
         // FIXME
         PodcastFeedParser().parseFeed(requireContext())
         // sendDownloadRequest()
+
+        return root
     }
 
     override fun onPause() {

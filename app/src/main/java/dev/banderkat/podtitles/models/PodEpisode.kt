@@ -5,10 +5,12 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 
+const val EPISODE_TABLE_NAME = "episode"
 /**
  * Holds the RSS child elements of a channel (modeled in PodFeed)
  */
-@Entity("episode", foreignKeys = [ForeignKey(
+@Entity(
+    EPISODE_TABLE_NAME, foreignKeys = [ForeignKey(
     entity = PodFeed::class,
     parentColumns = arrayOf("id"),
     childColumns = arrayOf("feedId"),
@@ -18,7 +20,7 @@ data class PodEpisode constructor(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     @ColumnInfo(index = true)
-    val feedId: Int, // ID of the parent PodFeed
+    val feedId: Long, // ID of the parent PodFeed
     val title: String,
     @ColumnInfo(index = true)
     val url: String,
@@ -31,6 +33,7 @@ data class PodEpisode constructor(
     val guid: String?,
     val pubDate: String?,
     val image: String?,
+    val category: String?,
     val episode: Int?,
     val season: Int?,
     val episodeType: String?
