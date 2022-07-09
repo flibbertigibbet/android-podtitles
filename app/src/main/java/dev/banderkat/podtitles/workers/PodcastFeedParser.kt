@@ -10,9 +10,6 @@ import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import java.io.IOException
 
-data class TestMe (val one: String, val two: Int)
-
-
 /**
  * Parse the RSS of a podcast feed. Looks for fields defined by iTunes:
  * https://help.apple.com/itc/podcasts_connect/#/itcb54353390
@@ -65,7 +62,7 @@ class PodcastFeedParser {
             // required by iTunes
             "itunes:image" to null, // also RSS has a complex 'image' element; iTunes is href attr
             "language" to "language", // allowed values: https://cyber.harvard.edu/rss/languages.html
-            // FIXME: "itunes:category" to null, // can be many or have subcategories
+            "itunes:category" to null, // can be many and/or have subcategories
             // only want first category; in text attr
             // RSS also has a 'category' element
 
@@ -98,7 +95,7 @@ class PodcastFeedParser {
                 } else {
                     // special processing
                     when (parser.name) {
-                        // FIXME: "itunes:category" -> readCategory()
+                        "itunes:category" -> readCategory()
                         "image" -> readImage()
                         "itunes:image" -> readItunesImage()
                         "ttl" -> channelMap["ttl"] = readInteger(parser.name)
@@ -145,7 +142,7 @@ class PodcastFeedParser {
         )
 
         // Map of PodEpisode DB field names to values read
-        // TODO: get FK ID first?
+        // TODO: set FK ID before committing to DB
         val itemMap = mutableMapOf<String, Any>("id" to 0L, "feedId" to 0L)
 
         @Suppress("SwallowedException")
@@ -164,6 +161,16 @@ class PodcastFeedParser {
             parser.require(XmlPullParser.END_TAG, null, "enclosure")
         }
 
+        // handle fields that are not to be parsed as simple strings
+        fun specialProcessing() {
+            when (parser.name) {
+                "enclosure" -> readEnclosure()
+                "itunes:episode" -> itemMap["episode"] = readInteger(parser.name)
+                "itunes:season" -> itemMap["season"] = readInteger(parser.name)
+                else -> Log.w(TAG, "Do not know how to parse ${parser.name}")
+            }
+        }
+
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
@@ -176,13 +183,7 @@ class PodcastFeedParser {
                     // simple string mapping
                     itemMap[dbFieldName] = readString(parser.name)
                 } else {
-                    // special processing
-                    when (parser.name) {
-                        "enclosure" -> readEnclosure()
-                        "itunes:episode" -> itemMap["episode"] = readInteger(parser.name)
-                        "itunes:season" -> itemMap["season"] = readInteger(parser.name)
-                        else -> Log.w(TAG, "Do not know how to parse ${parser.name}")
-                    }
+                    specialProcessing()
                 }
             } else {
                 skip()
@@ -194,63 +195,62 @@ class PodcastFeedParser {
             Log.d(TAG, "$key : $value")
         }
 
-        // TODO
         Log.d(TAG, "Creating episode...")
         val item = PodEpisode::class.createInstance(itemMap)
         Log.d(TAG, "Created episode: $item")
     }
 
-    // FIXME: read the first category and subcategory, if present
+    // read the first category and subcategory, if present, from nested category tags
     @Throws(IOException::class, XmlPullParserException::class)
     private fun readCategory() {
         parser.require(XmlPullParser.START_TAG, null, "itunes:category")
-        if (parser.next() == XmlPullParser.TEXT) {
-            if (!channelMap.containsKey("category")) channelMap["category"] = parser.text
-            parser.nextTag()
-        }
-        while (parser.next() != XmlPullParser.END_TAG) {
-            if (parser.eventType != XmlPullParser.START_TAG) {
-                continue
+        var openTags = 1
+        while (openTags > 0) {
+            val str = parser.getAttributeValue(null, "text")
+            if (str != null && openTags == 1 && !channelMap.containsKey("category")) {
+                channelMap["category"] = str
+            } else if (str != null && openTags > 1 && !channelMap.containsKey("subCategory")) {
+                channelMap["subCategory"] = str
             }
-            parser.require(XmlPullParser.START_TAG, null, "itunes:category")
-            if (parser.next() == XmlPullParser.TEXT) {
-                if (!channelMap.containsKey("subCategory")) channelMap["subCategory"] = parser.text
-                parser.nextTag()
+            parser.next()
+            when (parser.eventType) {
+                XmlPullParser.START_TAG -> openTags++
+                XmlPullParser.END_TAG -> openTags--
             }
-            parser.require(XmlPullParser.END_TAG, null, "itunes:category")
         }
-        parser.require(XmlPullParser.END_TAG, null, "itunes:category")
     }
 
     // read RSS 2.0 image element
     @Throws(IOException::class, XmlPullParserException::class)
     private fun readImage() {
         parser.require(XmlPullParser.START_TAG, null, "image")
-        while (parser.next() != XmlPullParser.END_TAG) {
-            if (parser.eventType != XmlPullParser.START_TAG) {
-                continue
+        var thisTag = parser.name
+        while (!(parser.eventType == XmlPullParser.END_TAG && parser.name == "image")) {
+            when (parser.eventType) {
+                XmlPullParser.TEXT -> {
+                    val str = parser.text
+                    when (thisTag) {
+                        // will overwrite itunes image url if already found
+                        "url" -> channelMap["image"] = str
+                        "title" -> channelMap["imageTitle"] = str
+                        // ignore image link
+                    }
+                }
+                XmlPullParser.START_TAG -> thisTag = parser.name
+                XmlPullParser.END_TAG -> thisTag = null
             }
-
-            var str = ""
-            if (parser.next() == XmlPullParser.TEXT) {
-                str = parser.text
-                parser.nextTag()
-            }
-
-            when (parser.name) {
-                "url" -> channelMap["image"] = str
-                "title" -> channelMap["imageTitle"] = str
-                // ignore link
-            }
-            parser.require(XmlPullParser.END_TAG, null, parser.name)
+            parser.next()
         }
-        parser.require(XmlPullParser.END_TAG, null, "image") }
+        parser.require(XmlPullParser.END_TAG, null, "image")
+    }
 
     // read the image url from the href attribute
     @Throws(IOException::class, XmlPullParserException::class)
     private fun readItunesImage() {
         parser.require(XmlPullParser.START_TAG, null, "itunes:image")
-        channelMap["image"] = parser.getAttributeValue(null, "href")
+        // only use itunes image tag if image tag not already found
+        if (!channelMap.containsKey("image")) channelMap["image"] =
+            parser.getAttributeValue(null, "href")
         parser.nextTag()
         parser.require(XmlPullParser.END_TAG, null, "itunes:image")
     }
@@ -273,7 +273,7 @@ class PodcastFeedParser {
         return try {
             readString(field).toInt()
         } catch (ex: ClassCastException) {
-            Log.w(TAG, "Failed to parse $field and cast as integer")
+            Log.w(TAG, "Failed to parse $field and cast it as an integer")
             0
         }
     }
