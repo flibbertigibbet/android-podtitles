@@ -46,10 +46,9 @@ internal class RSSParsingUtils(private val parser: XmlPullParser) {
                 XmlPullParser.TEXT -> {
                     val str = parser.text
                     when (thisTag) {
-                        // will overwrite itunes image url if already found
                         "url" -> image.image = str
                         "title" -> image.title = str
-                        // ignore image link
+                        // ignore image link (should be same as feed link)
                     }
                 }
                 XmlPullParser.START_TAG -> thisTag = parser.name

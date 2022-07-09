@@ -111,9 +111,7 @@ class PodcastFeedParser(context: Context, feedUrl: String) {
         parser.require(XmlPullParser.START_TAG, null, "rss")
 
         while (parser.next() != XmlPullParser.END_TAG) {
-            if (parser.eventType != XmlPullParser.START_TAG) {
-                continue
-            }
+            if (parser.eventType != XmlPullParser.START_TAG) continue
             if (parser.name == "channel") {
                 val channel = readChannel()
                 database.podDao.addFeed(channel)
@@ -128,10 +126,7 @@ class PodcastFeedParser(context: Context, feedUrl: String) {
     // Read the top-level channel info
     private fun readChannel(): PodFeed {
         while (parser.next() != XmlPullParser.END_TAG) {
-            if (parser.eventType != XmlPullParser.START_TAG) {
-                continue
-            }
-
+            if (parser.eventType != XmlPullParser.START_TAG) continue
             val parserName = parser.name
             if (parserName in channelFields.keys) {
                 val dbFieldName = channelFields[parserName]
@@ -164,6 +159,7 @@ class PodcastFeedParser(context: Context, feedUrl: String) {
             }
             "image" -> {
                 val image = parseUtils.readImage()
+                // will overwrite iTunes image url if already found
                 channelMap["image"] = image.image
                 channelMap["imageTitle"] = image.title
             }
@@ -187,10 +183,7 @@ class PodcastFeedParser(context: Context, feedUrl: String) {
         itemMap["feedId"] = feedUrl
 
         while (parser.next() != XmlPullParser.END_TAG) {
-            if (parser.eventType != XmlPullParser.START_TAG) {
-                continue
-            }
-
+            if (parser.eventType != XmlPullParser.START_TAG) continue
             val parserName = parser.name
             if (parserName in itemFields.keys) {
                 val dbFieldName = itemFields[parserName]
