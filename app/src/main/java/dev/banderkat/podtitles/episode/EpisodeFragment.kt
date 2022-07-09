@@ -32,6 +32,7 @@ import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
 import dev.banderkat.podtitles.player.PodTitlesDownloadService
 import dev.banderkat.podtitles.workers.*
 import java.io.File
+import java.net.URLEncoder
 
 const val MEDIA_URI = "https://storage.googleapis.com/exoplayer-test-media-0/play.mp3"
 
@@ -79,7 +80,8 @@ class EpisodeFragment : Fragment() {
         )
 
         // FIXME
-        fetchPodcast("example_feed.xml")
+        searchPodcasts("swim")
+        // fetchPodcast("example_feed.xml")
         // sendDownloadRequest()
 
         return root
@@ -225,6 +227,40 @@ class EpisodeFragment : Fragment() {
                         Log.d(
                             "EpisodeFragment",
                             "Podcast fetch moved to state ${workInfo?.state}"
+                        )
+                    }
+                }
+            }
+    }
+
+    private fun searchPodcasts(query: String) {
+        val encodedQuery = URLEncoder.encode(query, Charsets.UTF_8.name())
+        val searchRequest = OneTimeWorkRequestBuilder<PodcastSearchWorker>()
+            .setInputData(workDataOf(PODCAST_QUERY_PARAM to encodedQuery))
+            .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
+            .addTag("search") // TODO: move
+            .build()
+
+        val workManager = WorkManager.getInstance(requireContext())
+        workManager.enqueue(searchRequest)
+
+        workManager
+            .getWorkInfoByIdLiveData(searchRequest.id)
+            .observe(viewLifecycleOwner) { workInfo ->
+                when (workInfo?.state) {
+                    WorkInfo.State.SUCCEEDED -> {
+                        Log.d(
+                            "EpisodeFragment",
+                            "Successfully got search results"
+                        )
+                    }
+                    WorkInfo.State.FAILED -> {
+                        Log.e("EpisodeFragment", "Search worker failed")
+                    }
+                    else -> {
+                        Log.d(
+                            "EpisodeFragment",
+                            "Search worker moved to state ${workInfo?.state}"
                         )
                     }
                 }
