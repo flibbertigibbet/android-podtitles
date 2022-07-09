@@ -39,6 +39,7 @@ const val SUBTITLE_FILE_PATH_PARAM = "output_ttml_path"
 /**
  * Transcribe a cached audio chunk with Vosk and convert the results to a TTML subtitle file.
  */
+@Suppress("TooGenericExceptionCaught")
 class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
     Worker(appContext, workerParams) {
 
@@ -49,15 +50,16 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
     private var outputPipe: String? = null
 
     override fun doWork(): Result {
-        try {
-            val inputPath = inputData.getString(AUDIO_FILE_PATH_PARAM) ?: return Result.failure()
+        return try {
+            val inputPath = inputData.getString(AUDIO_FILE_PATH_PARAM)
+                ?: error("Missing TranscribeWorker parameter $AUDIO_FILE_PATH_PARAM")
             Log.d(TAG, "going to transcribe audio from $inputPath")
             createSubtitleDocument()
             val outputPath = recognize(inputPath)
-            return Result.success(Data(ImmutableMap.of(SUBTITLE_FILE_PATH_PARAM, outputPath)))
+            Result.success(Data(ImmutableMap.of(SUBTITLE_FILE_PATH_PARAM, outputPath)))
         } catch (ex: Exception) {
             Log.e(TAG, "Vosk transcription failed", ex)
-            return Result.failure()
+            Result.failure()
         } finally {
             if (!outputPipe.isNullOrEmpty()) {
                 FFmpegKitConfig.closeFFmpegPipe(outputPipe)

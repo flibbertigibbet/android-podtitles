@@ -20,7 +20,7 @@ data class PodEpisode constructor(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
     @ColumnInfo(index = true)
-    val feedId: Long, // ID of the parent PodFeed
+    var feedId: Long, // ID of the parent PodFeed
     val title: String,
     @ColumnInfo(index = true)
     val url: String,

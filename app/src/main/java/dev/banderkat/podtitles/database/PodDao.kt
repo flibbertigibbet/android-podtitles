@@ -30,13 +30,13 @@ interface  PodDao {
     fun getEpisodeById(id: String): LiveData<PodEpisode>
 
     @Query("SELECT * FROM $EPISODE_TABLE_NAME WHERE guid = :guid")
-    fun getEpisodeByGuid(id: String): LiveData<PodEpisode?>
+    fun getEpisodeByGuid(guid: String): LiveData<PodEpisode?>
 
-    @Insert
-    fun addFeed(feed: PodFeed)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun addFeed(feed: PodFeed): Long
 
-    @Insert
-    fun addEpisode(episode: PodEpisode)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun addEpisode(episode: PodEpisode): Long
 
     @Update
     fun updateFeed(feed: PodFeed)

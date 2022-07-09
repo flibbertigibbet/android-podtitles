@@ -1,7 +1,8 @@
-plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-}
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+    apply plugin: 'androidx.navigation.safeargs'
+apply plugin: 'kotlin-parcelize'
 
 android {
     compileSdk 32
@@ -69,30 +70,34 @@ dependencies {
     implementation "androidx.work:work-multiprocess:$work_version"
 
     // Room
-    def room_version = "2.4.2"
+    def room_version = "2.5.0-alpha02"
 
     // Kotlin reflection, for dynamic object construction from XML
-    implementation "org.jetbrains.kotlin:kotlin-reflect:1.7.0"
+    implementation "org.jetbrains.kotlin:kotlin-reflect:1.7.10"
 
+    implementation("androidx.room:room-ktx:$room_version")
     implementation "androidx.room:room-runtime:$room_version"
-    annotationProcessor "androidx.room:room-compiler:$room_version"
-    implementation "androidx.room:room-paging:2.5.0-alpha02"
+    kapt "androidx.room:room-compiler:$room_version"
+    implementation "androidx.room:room-paging:$room_version"
 
     implementation 'androidx.core:core-ktx:1.8.0'
     implementation 'androidx.appcompat:appcompat:1.4.2'
     implementation 'com.google.android.material:material:1.6.1'
+    implementation 'androidx.fragment:fragment-ktx:1.5.0'
     implementation "androidx.cardview:cardview:1.0.0"
+    implementation "androidx.recyclerview:recyclerview:1.2.1"
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.5.0'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.0'
     implementation 'androidx.navigation:navigation-fragment-ktx:2.5.0'
     implementation 'androidx.navigation:navigation-ui-ktx:2.5.0'
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1"
+
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
-
     androidTestImplementation "androidx.work:work-testing:$work_version"
-
     // Utilities for testing media components (including ExoPlayer components)
     implementation "androidx.media3:media3-test-utils:$media3_version"
     // Utilities for testing media components (including ExoPlayer components) via Robolectric
