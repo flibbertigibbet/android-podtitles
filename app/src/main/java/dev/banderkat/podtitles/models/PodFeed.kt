@@ -10,9 +10,7 @@ const val FEED_TABLE_NAME = "feed"
  */
 @Entity(tableName = FEED_TABLE_NAME)
 data class PodFeed (
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0L,
-    @ColumnInfo(index = true)
+    @PrimaryKey
     val url: String, // not provided in the RSS, but may be updated from the RSS if changed
     val title: String,
     val description: String,
@@ -25,6 +23,7 @@ data class PodFeed (
     val author: String = "",
     val link: String = "",
     val copyright: String = "",
+    val newUrl: String = "",
     @ColumnInfo(defaultValue = "0")
     val ttl: Int = 0,
     val pubDate: String = "",
@@ -32,6 +31,6 @@ data class PodFeed (
     val complete: Boolean = false
 ) {
     override fun toString(): String {
-        return "PodFeed id: $id title: $title"
+        return "PodFeed title: $title URL: $url"
     }
 }

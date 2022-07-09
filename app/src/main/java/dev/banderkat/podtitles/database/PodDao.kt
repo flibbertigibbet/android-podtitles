@@ -15,22 +15,13 @@ const val DATABASE_NAME = "podtitles"
 @Dao
 interface  PodDao {
     @Query("SELECT * FROM $FEED_TABLE_NAME WHERE url = :url")
-    fun getFeedByUrl(url: String): LiveData<PodFeed>
+    fun getFeed(url: String): LiveData<PodFeed>
 
-    @Query("SELECT * FROM $FEED_TABLE_NAME WHERE id = :id")
-    fun getFeedById(id: String): LiveData<PodFeed>
+    @Query("SELECT * FROM $EPISODE_TABLE_NAME WHERE feedId = :feedUrl")
+    fun getEpisodesForFeed(feedUrl: String): LiveData<List<PodEpisode>>
 
-    @Query("SELECT * FROM $EPISODE_TABLE_NAME WHERE feedId = :feedId")
-    fun getEpisodesForFeed(feedId: String): LiveData<List<PodEpisode>>
-
-    @Query("SELECT * FROM $EPISODE_TABLE_NAME WHERE url = :url")
-    fun getEpisodeByUrl(url: String): LiveData<PodEpisode>
-
-    @Query("SELECT * FROM $EPISODE_TABLE_NAME WHERE id = :id")
-    fun getEpisodeById(id: String): LiveData<PodEpisode>
-
-    @Query("SELECT * FROM $EPISODE_TABLE_NAME WHERE guid = :guid")
-    fun getEpisodeByGuid(guid: String): LiveData<PodEpisode?>
+    @Query("SELECT * FROM $EPISODE_TABLE_NAME WHERE guid = :guid AND feedId = :feedUrl")
+    fun getEpisode(feedUrl: String, guid: String): LiveData<PodEpisode?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addFeed(feed: PodFeed): Long

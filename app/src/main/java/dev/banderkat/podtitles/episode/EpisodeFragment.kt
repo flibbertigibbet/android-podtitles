@@ -26,6 +26,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.work.*
 import com.google.common.collect.ImmutableList
 import dev.banderkat.podtitles.PodTitlesApplication
+import dev.banderkat.podtitles.database.getDatabase
 import dev.banderkat.podtitles.databinding.FragmentEpisodeBinding
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
 import dev.banderkat.podtitles.player.PodTitlesDownloadService
@@ -205,6 +206,17 @@ class EpisodeFragment : Fragment() {
                             "EpisodeFragment",
                             "Podcast fetcher successfully fetched feed at $url"
                         )
+
+                        val database = getDatabase(requireContext())
+                        database.podDao.getFeed(url).observe(viewLifecycleOwner) {
+                            Log.d(
+                                TAG,
+                                "Saved feed found in DB by URL: $it"
+                            )
+                        }
+                        database.podDao.getEpisodesForFeed(url).observe(viewLifecycleOwner) {
+                            Log.d(TAG, "Found ${it.size} episodes for feed in DB")
+                        }
                     }
                     WorkInfo.State.FAILED -> {
                         Log.e("EpisodeFragment", "Podcast fetch worker failed")
