@@ -38,6 +38,6 @@ data class PodEpisode constructor(
     val episodeType: String = ""
 ) {
     override fun toString(): String {
-        return "PodEpisode ULR: $url guid: $guid title: $title"
+        return "PodEpisode (GUID: $guid title: $title)"
     }
 }

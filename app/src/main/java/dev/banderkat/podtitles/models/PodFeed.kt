@@ -31,6 +31,6 @@ data class PodFeed (
     val complete: Boolean = false
 ) {
     override fun toString(): String {
-        return "PodFeed title: $title URL: $url"
+        return "PodFeed (title: $title URL: $url)"
     }
 }

@@ -8,6 +8,9 @@ import dev.banderkat.podtitles.utils.PodcastFeedParser
 
 const val PODCAST_URL_PARAM = "url"
 
+/**
+ * Fetches the RSS for a podcast feed in the background, parses it, then stores it to the database.
+ */
 class PodcastFetchWorker(appContext: Context, workerParams: WorkerParameters) :
 Worker(appContext, workerParams) {
     @Suppress("TooGenericExceptionCaught")
