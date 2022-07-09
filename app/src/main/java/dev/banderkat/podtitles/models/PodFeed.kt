@@ -3,7 +3,6 @@ package dev.banderkat.podtitles.models
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import dev.banderkat.podtitles.utils.DynamicInitializer
 
 const val FEED_TABLE_NAME = "feed"
 /**
@@ -12,25 +11,25 @@ const val FEED_TABLE_NAME = "feed"
 @Entity(tableName = FEED_TABLE_NAME)
 data class PodFeed (
     @PrimaryKey(autoGenerate = true)
-    val id: Long,
+    val id: Long = 0L,
     @ColumnInfo(index = true)
     val url: String, // not provided in the RSS, but may be updated from the RSS if changed
     val title: String,
     val description: String,
-    val image: String?,
-    val imageTitle: String?,
+    val image: String = "",
+    val imageTitle: String = "",
     @ColumnInfo(index = true)
-    val language: String?,
-    val category: String?,
-    val subCategory: String?,
-    val author: String?,
-    val link: String?,
-    val copyright: String?,
+    val language: String = "",
+    val category: String = "",
+    val subCategory: String = "",
+    val author: String = "",
+    val link: String = "",
+    val copyright: String = "",
     @ColumnInfo(defaultValue = "0")
-    val ttl: Int?,
-    val pubDate: String?,
+    val ttl: Int = 0,
+    val pubDate: String = "",
     @ColumnInfo(defaultValue = "false")
-    val complete: Boolean?
+    val complete: Boolean = false
 ) {
     override fun toString(): String {
         return "PodFeed id: $id title: $title"
