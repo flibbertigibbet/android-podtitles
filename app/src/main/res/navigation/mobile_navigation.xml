@@ -3,11 +3,26 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_home">
-
+    app:startDestination="@id/feedListFragment">
     <fragment
-        android:id="@+id/navigation_home"
+        android:id="@+id/feedListFragment"
+        android:name="dev.banderkat.podtitles.feedlist.FeedListFragment"
+        android:label="FeedListFragment" >
+        <action
+            android:id="@+id/action_feedListFragment_to_feedDetailsFragment"
+            app:destination="@id/feedDetailsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/episodeFragment"
         android:name="dev.banderkat.podtitles.episode.EpisodeFragment"
-        android:label="@string/title_episode"
+        android:label="fragment_episode"
         tools:layout="@layout/fragment_episode" />
+    <fragment
+        android:id="@+id/feedDetailsFragment"
+        android:name="dev.banderkat.podtitles.feeddetails.FeedDetailsFragment"
+        android:label="FeedDetailsFragment" >
+        <action
+            android:id="@+id/action_feedDetailsFragment_to_episodeFragment"
+            app:destination="@id/episodeFragment" />
+    </fragment>
 </navigation>
