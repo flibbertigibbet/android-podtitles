@@ -1,7 +1,6 @@
 package dev.banderkat.podtitles
 
 import android.app.SearchManager
-import android.content.ComponentName
 import android.content.Context
 import android.database.MatrixCursor
 import android.os.Bundle
@@ -18,7 +17,6 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.work.*
 import dev.banderkat.podtitles.databinding.ActivityMainBinding
-import dev.banderkat.podtitles.search.PodSearchActivity
 import dev.banderkat.podtitles.workers.AUTHORS_RESULT_KEY
 import dev.banderkat.podtitles.workers.PODCAST_QUERY_PARAM
 import dev.banderkat.podtitles.workers.PodcastSearchWorker
