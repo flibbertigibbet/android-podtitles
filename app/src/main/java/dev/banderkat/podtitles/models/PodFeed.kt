@@ -1,13 +1,16 @@
 package dev.banderkat.podtitles.models
 
+import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.parcelize.Parcelize
 
 const val FEED_TABLE_NAME = "feed"
 /**
  * Holds the top-level RSS channel element properties for a feed, plus its URL
  */
+@Parcelize
 @Entity(tableName = FEED_TABLE_NAME)
 data class PodFeed (
     @PrimaryKey
@@ -29,7 +32,7 @@ data class PodFeed (
     val pubDate: String = "",
     @ColumnInfo(defaultValue = "false")
     val complete: Boolean = false
-) {
+): Parcelable {
     override fun toString(): String {
         return "PodFeed (title: $title URL: $url)"
     }

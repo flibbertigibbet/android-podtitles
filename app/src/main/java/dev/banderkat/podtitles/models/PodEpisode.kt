@@ -1,9 +1,11 @@
 package dev.banderkat.podtitles.models
 
+import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import kotlinx.parcelize.Parcelize
 
 const val EPISODE_TABLE_NAME = "episode"
 /**
@@ -18,6 +20,7 @@ const val EPISODE_TABLE_NAME = "episode"
     childColumns = arrayOf("feedId"),
     onDelete = ForeignKey.CASCADE
 )])
+@Parcelize
 data class PodEpisode constructor(
     @ColumnInfo(index = true)
     val guid: String, // should be same as URL if GUID not provided in feed
@@ -36,7 +39,7 @@ data class PodEpisode constructor(
     val episode: Int = 0,
     val season: Int = 0,
     val episodeType: String = ""
-) {
+): Parcelable {
     override fun toString(): String {
         return "PodEpisode (GUID: $guid title: $title)"
     }

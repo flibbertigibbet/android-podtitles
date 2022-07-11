@@ -11,12 +11,19 @@
         <action
             android:id="@+id/action_feedListFragment_to_feedDetailsFragment"
             app:destination="@id/feedDetailsFragment" />
+        <action
+            android:id="@+id/action_feedListFragment_to_searchPodFragment"
+            app:destination="@id/searchPodFragment" />
     </fragment>
     <fragment
         android:id="@+id/episodeFragment"
         android:name="dev.banderkat.podtitles.episode.EpisodeFragment"
         android:label="fragment_episode"
-        tools:layout="@layout/fragment_episode" />
+        tools:layout="@layout/fragment_episode" >
+        <argument
+            android:name="episode"
+            app:argType="dev.banderkat.podtitles.models.PodEpisode" />
+    </fragment>
     <fragment
         android:id="@+id/feedDetailsFragment"
         android:name="dev.banderkat.podtitles.feeddetails.FeedDetailsFragment"
@@ -24,5 +31,27 @@
         <action
             android:id="@+id/action_feedDetailsFragment_to_episodeFragment"
             app:destination="@id/episodeFragment" />
+        <argument
+            android:name="feed"
+            app:argType="dev.banderkat.podtitles.models.PodFeed" />
+    </fragment>
+    <fragment
+        android:id="@+id/searchResultFragment"
+        android:name="dev.banderkat.podtitles.search.SearchResultFragment"
+        android:label="SearchResultFragment" >
+        <action
+            android:id="@+id/action_searchResultFragment_to_feedDetailsFragment"
+            app:destination="@id/feedDetailsFragment" />
+        <argument
+            android:name="searchResult"
+            app:argType="dev.banderkat.podtitles.models.GpodderSearchResult" />
+    </fragment>
+    <fragment
+        android:id="@+id/searchPodFragment"
+        android:name="dev.banderkat.podtitles.search.SearchPodFragment"
+        android:label="SearchPodFragment" >
+        <action
+            android:id="@+id/action_searchPodFragment_to_searchResultFragment"
+            app:destination="@id/searchResultFragment" />
     </fragment>
 </navigation>

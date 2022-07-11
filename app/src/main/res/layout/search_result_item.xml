@@ -7,7 +7,9 @@
 
     <TextView
         android:id="@+id/search_result_title"
-        style="@style/TextAppearance.AppCompat.SearchResult.Title"
+        style="@style/TextAppearance.AppCompat.Title"
+        android:textSize="16sp"
+        android:padding="4dp"
         tools:text="search result title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -16,7 +18,8 @@
 
     <TextView
         android:id="@+id/search_results_subtitle"
-        style="@style/TextAppearance.AppCompat.SearchResult.Subtitle"
+        style="@style/TextAppearance.AppCompat.Caption"
+        android:padding="4dp"
         tools:text="search result subtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
