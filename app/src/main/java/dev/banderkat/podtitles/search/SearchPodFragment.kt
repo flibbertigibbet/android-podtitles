@@ -38,7 +38,6 @@ class SearchPodFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentSearchPodBinding.inflate(inflater, container, false)
-
         return binding.root
     }
 
@@ -82,13 +81,13 @@ class SearchPodFragment : Fragment() {
     private fun setupMenu(menu: Menu) {
         val searchItem: MenuItem? = menu.findItem(R.id.action_search_podcasts)
         searchItem?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-            override fun onMenuItemActionExpand(p0: MenuItem?): Boolean {
+            override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
                 return true
             }
 
-            override fun onMenuItemActionCollapse(p0: MenuItem?): Boolean {
-                findNavController().navigateUp()
-                return true
+            override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+                // return to feed list when user backs out of expanded search widget
+                return findNavController().navigateUp()
             }
         })
 
