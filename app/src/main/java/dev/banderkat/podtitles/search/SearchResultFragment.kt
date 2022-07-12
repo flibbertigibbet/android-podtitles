@@ -33,7 +33,7 @@ class SearchResultFragment: Fragment() {
         binding.apply {
             searchResultCardTitle.text = searchResult.title
             searchResultCardAuthor.text = searchResult.author
-            searchResultCardTitle.text = searchResult.url
+            searchResultCardLink.text = searchResult.url
         }
     }
 }
