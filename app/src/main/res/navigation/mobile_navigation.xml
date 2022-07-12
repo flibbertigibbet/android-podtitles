@@ -7,7 +7,7 @@
     <fragment
         android:id="@+id/feedListFragment"
         android:name="dev.banderkat.podtitles.feedlist.FeedListFragment"
-        android:label="FeedListFragment" >
+        android:label="@string/fragment_title_feed_list" >
         <action
             android:id="@+id/action_feedListFragment_to_feedDetailsFragment"
             app:destination="@id/feedDetailsFragment" />
@@ -18,7 +18,7 @@
     <fragment
         android:id="@+id/episodeFragment"
         android:name="dev.banderkat.podtitles.episode.EpisodeFragment"
-        android:label="fragment_episode"
+        android:label="@string/fragment_title_episode_details"
         tools:layout="@layout/fragment_episode" >
         <argument
             android:name="episode"
@@ -27,7 +27,7 @@
     <fragment
         android:id="@+id/feedDetailsFragment"
         android:name="dev.banderkat.podtitles.feeddetails.FeedDetailsFragment"
-        android:label="FeedDetailsFragment" >
+        android:label="@string/fragment_title_feed_details" >
         <action
             android:id="@+id/action_feedDetailsFragment_to_episodeFragment"
             app:destination="@id/episodeFragment" />
@@ -38,7 +38,7 @@
     <fragment
         android:id="@+id/searchResultFragment"
         android:name="dev.banderkat.podtitles.search.SearchResultFragment"
-        android:label="SearchResultFragment" >
+        android:label="@string/fragment_title_search_result" >
         <action
             android:id="@+id/action_searchResultFragment_to_feedDetailsFragment"
             app:destination="@id/feedDetailsFragment" />
@@ -49,7 +49,7 @@
     <fragment
         android:id="@+id/searchPodFragment"
         android:name="dev.banderkat.podtitles.search.SearchPodFragment"
-        android:label="SearchPodFragment" >
+        android:label="@string/fragment_title_search_podcasts" >
         <action
             android:id="@+id/action_searchPodFragment_to_searchResultFragment"
             app:destination="@id/searchResultFragment" />

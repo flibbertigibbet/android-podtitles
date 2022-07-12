@@ -4,6 +4,9 @@
     package="dev.banderkat.podtitles">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- for Glide to retry after reconnect -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- for workers -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
