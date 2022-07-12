@@ -17,6 +17,8 @@ data class PodFeed (
     val url: String, // not provided in the RSS, but may be updated from the RSS if changed
     val title: String,
     val description: String,
+    @ColumnInfo(index = true)
+    val displayOrder: Int, // not from the RSS; order to display it in feed list
     val image: String = "",
     val imageTitle: String = "",
     @ColumnInfo(index = true)

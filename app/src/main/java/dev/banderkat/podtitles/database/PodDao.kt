@@ -12,7 +12,13 @@ const val DATABASE_NAME = "podtitles"
 @Dao
 interface PodDao {
     @Query("SELECT * FROM $FEED_TABLE_NAME WHERE url = :url")
-    fun getFeed(url: String): LiveData<PodFeed>
+    fun getFeed(url: String): LiveData<PodFeed?>
+
+    @Query("SELECT * FROM $FEED_TABLE_NAME ORDER BY displayOrder ASC")
+    fun getAllFeeds(): LiveData<List<PodFeed>>
+
+    @Query("SELECT MAX(displayOrder) from $FEED_TABLE_NAME")
+    fun getMaxFeedDisplayOrder(): LiveData<Int?>
 
     @Query("SELECT * FROM $EPISODE_TABLE_NAME WHERE feedId = :feedUrl")
     fun getEpisodesForFeed(feedUrl: String): LiveData<List<PodEpisode>>
