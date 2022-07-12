@@ -5,8 +5,6 @@ import androidx.media3.database.DatabaseProvider
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.NoOpCacheEvictor
@@ -18,8 +16,8 @@ import java.net.CookieHandler
 import java.net.CookieManager
 import java.net.CookiePolicy
 
-class PodTitlesApplication: Application() {
-    
+class PodTitlesApplication : Application() {
+
     // Cache management singletons for ExoPlayer
     val databaseProvider: DatabaseProvider by lazy {
         StandaloneDatabaseProvider(this)
@@ -56,7 +54,8 @@ class PodTitlesApplication: Application() {
             .setCache(downloadCache)
             .setUpstreamDataSourceFactory(
                 DefaultDataSource.Factory(
-                this, dataSourceFactory)
+                    this, dataSourceFactory
+                )
             )
             .setCacheWriteDataSinkFactory(null)
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)

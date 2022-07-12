@@ -6,7 +6,9 @@
         android:id="@+id/action_search_podcasts"
         android:icon="@android:drawable/ic_menu_search"
         app:iconTint="@color/white"
-        app:showAsAction="always|collapseActionView"
+        app:showAsAction="always"
+        app:iconifiedByDefault="false"
+        android:iconifiedByDefault="false"
         app:actionViewClass="androidx.appcompat.widget.SearchView"
         android:title="@string/add_podcast" />
 </menu>

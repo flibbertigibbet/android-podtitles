@@ -28,7 +28,7 @@ class PodcastSearchWorker(appContext: Context, workerParams: WorkerParameters) :
             database.podDao.addGpodderResults(results)
             Result.success()
         } catch (ex: Exception) {
-            Log.e(TAG, "Podcast feed fetch failed", ex)
+            Log.e(TAG, "Podcast search failed", ex)
             Result.failure()
         }
     }
