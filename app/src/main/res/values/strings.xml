@@ -17,4 +17,6 @@
     <string name="default_logo_description">Podcast logo</string>
     <string name="episodes_list_label">Episodes</string>
     <string name="feed_card_details_expand_fab_description">Expand details</string>
+    <string name="feed_card_details_collapse_fab_description">Collapse details</string>
+    <string name="feed_card_link_description">Website link</string>
 </resources>

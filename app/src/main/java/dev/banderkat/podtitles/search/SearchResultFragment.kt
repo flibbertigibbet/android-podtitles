@@ -66,9 +66,9 @@ class SearchResultFragment : Fragment() {
 
             // go to feed details after adding new feed
             if (feedAdded && podFeed != null) {
-                findNavController().navigate(
-                    R.id.action_searchResultFragment_to_feedDetailsFragment
-                )
+                val action = SearchResultFragmentDirections
+                    .actionSearchResultFragmentToFeedDetailsFragment(podFeed!!)
+                findNavController().navigate(action)
             }
 
             changeFab(feed != null)

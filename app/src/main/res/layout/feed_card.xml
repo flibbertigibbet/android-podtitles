@@ -2,6 +2,7 @@
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:animateLayoutChanges="true"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:id="@+id/feed_card_view"
@@ -9,6 +10,8 @@
     app:cardCornerRadius="16dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:padding="4dp"
+        android:animateLayoutChanges="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/cardview_dark_background">
@@ -43,10 +46,102 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/feed_card_expanded_barrier"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/feed_card_image"
             tools:text="name of the author" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
 
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/feed_card_expanded_barrier"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_author"
+            app:layout_constraintStart_toStartOf="parent"
+            app:barrierDirection="bottom"
+            app:constraint_referenced_ids="feed_card_author,feed_card_image"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <TextView
+            android:id="@+id/feed_card_category"
+            android:visibility="gone"
+            tools:visibility="visible"
+            style="@style/TextAppearance.AppCompat.Small.Inverse"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_expanded_barrier"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/feed_card_subcategory"
+            android:layout_margin="16dp"
+            tools:text="Category"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/feed_card_subcategory"
+            android:visibility="gone"
+            tools:visibility="visible"
+            style="@style/TextAppearance.AppCompat.Small.Inverse"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_expanded_barrier"
+            app:layout_constraintStart_toEndOf="@id/feed_card_category"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_margin="16dp"
+            tools:text="Sub-category"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/feed_card_language"
+            android:visibility="gone"
+            tools:visibility="visible"
+            style="@style/TextAppearance.AppCompat.Small.Inverse"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_category"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/feed_card_link"
+            android:layout_margin="16dp"
+            tools:text="English"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/feed_card_link"
+            android:background="#00000000"
+            android:contentDescription="@string/feed_card_link_description"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_baseline_link_24"
+            android:visibility="gone"
+            tools:visibility="visible"
+            android:layout_margin="16dp"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_category"
+            app:layout_constraintStart_toEndOf="@id/feed_card_language"
+            app:layout_constraintBottom_toTopOf="@id/feed_card_description"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <TextView
+            android:id="@+id/feed_card_description"
+            android:visibility="gone"
+            tools:visibility="visible"
+            style="@style/TextAppearance.AppCompat.Medium.Inverse"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_language"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_margin="16dp"
+            android:padding="4dp"
+            tools:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sagittis, eros et laoreet euismod, lacus libero tempus mauris, a cursus nunc urna et velit. Nunc eget nisl porttitor, aliquam eros vel, mollis tortor. Nulla cursus eu orci in volutpat. Vestibulum et ligula pellentesque, pharetra nunc sit amet, vulputate ex. In varius, dolor quis consectetur tincidunt, lacus urna pharetra purus, at venenatis libero sem vel arcu. Ut efficitur dui nec urna euismod malesuada."
+            android:layout_width="0dp"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/feed_card_copyright"
+            android:visibility="gone"
+            tools:visibility="visible"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_description"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            style="@style/TextAppearance.AppCompat.Caption"
+            android:textColor="@color/material_dynamic_neutral_variant70"
+            android:layout_margin="16dp"
+            android:padding="4dp"
+            tools:text="Copyright text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

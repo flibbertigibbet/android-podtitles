@@ -41,7 +41,8 @@
         android:label="@string/fragment_title_search_result" >
         <action
             android:id="@+id/action_searchResultFragment_to_feedDetailsFragment"
-            app:destination="@id/feedDetailsFragment" />
+            app:destination="@id/feedDetailsFragment"
+            app:popUpTo="@id/feedListFragment" />
         <argument
             android:name="searchResult"
             app:argType="dev.banderkat.podtitles.models.GpodderSearchResult" />

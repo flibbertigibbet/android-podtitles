@@ -7,7 +7,6 @@ import dev.banderkat.podtitles.database.PodDatabase
 import dev.banderkat.podtitles.database.getDatabase
 import dev.banderkat.podtitles.models.PodEpisode
 import dev.banderkat.podtitles.models.PodFeed
-import okhttp3.OkHttp
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.xmlpull.v1.XmlPullParser
@@ -62,7 +61,7 @@ class PodcastFeedParser(
         // optional
         "itunes:author" to "author",
         "link" to "link", // required by RSS 2.0, but not by iTunes?
-        "itunes:new-feed-url" to "newUrl", // used for moved feeds
+        "itunes:new-feed-url" to "newUrl", // used for moved feeds TODO: use
         "copyright" to "copyright",
         "itunes:complete" to null, // Yes if no more episodes will be published to this feed
         "itunes:summary" to null, // use if description is missing
