@@ -91,6 +91,9 @@ dependencies {
     // Kotlin reflection, for dynamic object construction from XML
     implementation "org.jetbrains.kotlin:kotlin-reflect:1.7.10"
 
+    // for CircularDrawable
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
+
     implementation("androidx.room:room-ktx:$room_version")
     implementation "androidx.room:room-runtime:$room_version"
     kapt "androidx.room:room-compiler:$room_version"
