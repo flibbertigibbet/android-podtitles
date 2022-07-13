@@ -20,14 +20,16 @@ import org.xmlpull.v1.XmlPullParser
  * https://support.google.com/podcast-publishers/answer/9889544
  */
 
-class PodcastFeedParser(context: Context, feedUrl: String) {
+class PodcastFeedParser(
+    private val context: Context,
+    private val feedUrl: String,
+    private val displayOrder: Int
+) {
     companion object {
         const val TAG = "FeedParser"
     }
 
     private val database: PodDatabase
-    private val context: Context
-    private val feedUrl: String
     private val parser = Xml.newPullParser()
     private val parseUtils = RSSParsingUtils(parser)
 
@@ -91,10 +93,9 @@ class PodcastFeedParser(context: Context, feedUrl: String) {
     )
 
     init {
-        this.context = context
-        this.feedUrl = feedUrl
         database = getDatabase(context)
         channelMap["url"] = feedUrl
+        channelMap["displayOrder"] = displayOrder
     }
 
     fun fetchFeed() {
@@ -115,7 +116,7 @@ class PodcastFeedParser(context: Context, feedUrl: String) {
             if (parser.name == "channel") {
                 val channel = readChannel()
                 database.podDao.addFeed(channel)
-                episodes.forEach { episode -> database.podDao.addEpisode(episode) }
+                database.podDao.addEpisodes(episodes)
             } else {
                 parseUtils.skip()
             }

@@ -36,7 +36,7 @@ interface PodDao {
     fun addEpisode(episode: PodEpisode): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun addEpisodes(episodes: List<PodEpisode>) // TODO: switch to bulk insert
+    fun addEpisodes(episodes: List<PodEpisode>)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun addGpodderResults(results: List<GpodderSearchResult>)

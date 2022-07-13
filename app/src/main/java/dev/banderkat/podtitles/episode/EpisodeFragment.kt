@@ -26,11 +26,12 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.work.*
 import com.google.common.collect.ImmutableList
 import dev.banderkat.podtitles.PodTitlesApplication
-import dev.banderkat.podtitles.database.getDatabase
 import dev.banderkat.podtitles.databinding.FragmentEpisodeBinding
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
 import dev.banderkat.podtitles.player.PodTitlesDownloadService
-import dev.banderkat.podtitles.workers.*
+import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
+import dev.banderkat.podtitles.workers.SUBTITLE_FILE_PATH_PARAM
+import dev.banderkat.podtitles.workers.TranscribeWorker
 import java.io.File
 
 const val MEDIA_URI = "https://storage.googleapis.com/exoplayer-test-media-0/play.mp3"
@@ -186,50 +187,6 @@ class EpisodeFragment : Fragment() {
             exoPlayer.release()
         }
         player = null
-    }
-
-    private fun fetchPodcast(url: String) {
-        val fetchPodRequest = OneTimeWorkRequestBuilder<PodcastFetchWorker>()
-            .setInputData(workDataOf(PODCAST_URL_PARAM to url))
-            .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
-            .addTag("fetchPodcast") // TODO: move
-            .build()
-
-        val workManager = WorkManager.getInstance(requireContext())
-        workManager.enqueue(fetchPodRequest)
-
-        workManager
-            .getWorkInfoByIdLiveData(fetchPodRequest.id)
-            .observe(viewLifecycleOwner) { workInfo ->
-                when (workInfo?.state) {
-                    WorkInfo.State.SUCCEEDED -> {
-                        Log.d(
-                            "EpisodeFragment",
-                            "Podcast fetcher successfully fetched feed at $url"
-                        )
-
-                        val database = getDatabase(requireContext())
-                        database.podDao.getFeed(url).observe(viewLifecycleOwner) {
-                            Log.d(
-                                TAG,
-                                "Saved feed found in DB by URL: $it"
-                            )
-                        }
-                        database.podDao.getEpisodesForFeed(url).observe(viewLifecycleOwner) {
-                            Log.d(TAG, "Found ${it.size} episodes for feed in DB")
-                        }
-                    }
-                    WorkInfo.State.FAILED -> {
-                        Log.e("EpisodeFragment", "Podcast fetch worker failed")
-                    }
-                    else -> {
-                        Log.d(
-                            "EpisodeFragment",
-                            "Podcast fetch moved to state ${workInfo?.state}"
-                        )
-                    }
-                }
-            }
     }
 
     private fun transcribe(inputFilePath: String) {

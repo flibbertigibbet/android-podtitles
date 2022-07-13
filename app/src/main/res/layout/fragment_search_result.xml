@@ -2,6 +2,7 @@
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/search_result_card"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -60,20 +61,41 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_margin="16dp"
-            app:layout_constraintBottom_toTopOf="@id/search_result_card_add_feed_fab"
+            app:layout_constraintBottom_toTopOf="@id/search_result_card_wrapper"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/search_result_card_link"
             tools:text="This is where the description of the feed will go. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam vitae euismod augue. Aliquam nisi augue, vehicula id vestibulum sed, maximus id dui. Donec eu dapibus leo. Aliquam aliquet molestie ligula ut vehicula. Vestibulum tristique, urna eget posuere mattis, nunc metus commodo ex, vitae egestas magna diam quis urna." />
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/search_result_card_add_feed_fab"
+        <RelativeLayout
+            android:id="@+id/search_result_card_wrapper"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
             android:layout_margin="16dp"
-            android:contentDescription="@string/fab_add_feed"
-            android:src="@android:drawable/ic_input_add"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_anchorGravity="bottom|end">
+
+            <ProgressBar
+                android:id="@+id/search_result_card_fab_progress"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_centerInParent="true"
+                android:visibility="invisible"
+                android:indeterminateTint="@color/design_default_color_primary" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/search_result_card_add_feed_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:contentDescription="@string/fab_add_feed"
+                android:src="@android:drawable/ic_input_add"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+        </RelativeLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
