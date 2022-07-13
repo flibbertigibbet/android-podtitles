@@ -5,58 +5,77 @@ import androidx.media3.database.DatabaseProvider
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.datasource.HttpDataSource
-import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.NoOpCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.offline.DownloadManager
 import dev.banderkat.podtitles.player.DOWNLOAD_CONTENT_DIRECTORY
+import okhttp3.OkHttpClient
 import java.io.File
 import java.net.CookieHandler
 import java.net.CookieManager
 import java.net.CookiePolicy
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.SSLSession
 
-class PodTitlesApplication: Application() {
-
-    val databaseProvider: DatabaseProvider by lazy {
-        StandaloneDatabaseProvider(this)
+class PodTitlesApplication : Application() {
+    companion object {
+        const val httpCacheDir = "http_cache"
+        const val cacheMaxSize = 50L * 1024L * 1024L // 50 MiB
     }
 
-    val downloadCache: Cache by lazy {
-        SimpleCache(
-            File(this.filesDir, DOWNLOAD_CONTENT_DIRECTORY),
-            NoOpCacheEvictor(),
-            databaseProvider
-        )
-    }
-
-    val dataSourceFactory: DefaultDataSource.Factory by lazy {
-        val cookieManager = CookieManager()
-        cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ORIGINAL_SERVER)
-        CookieHandler.setDefault(cookieManager)
-        return@lazy DefaultDataSource.Factory(this)
-    }
-
-    val downloadManager: DownloadManager by lazy {
-        DownloadManager(
-            this,
-            databaseProvider,
-            downloadCache,
-            dataSourceFactory,
-            Runnable::run
-        )
-    }
-
-    @Synchronized
-    fun getDataSourceFactory(): DataSource.Factory =
-        CacheDataSource.Factory()
-            .setCache(downloadCache)
-            .setUpstreamDataSourceFactory(
-                DefaultDataSource.Factory(
-                this, dataSourceFactory)
+    // Caching OkHttp client
+    val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .cache(
+                okhttp3.Cache(
+                    directory = File(cacheDir, httpCacheDir),
+                    maxSize = cacheMaxSize
+                )
             )
-            .setCacheWriteDataSinkFactory(null)
-            .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+            .hostnameVerifier { _, _ -> true } // many feeds fail hostname verification
+            .build()
+    }
+
+// Cache management singletons for ExoPlayer
+val databaseProvider: DatabaseProvider by lazy {
+    StandaloneDatabaseProvider(this)
+}
+
+val downloadCache: androidx.media3.datasource.cache.Cache by lazy {
+    SimpleCache(
+        File(this.filesDir, DOWNLOAD_CONTENT_DIRECTORY),
+        NoOpCacheEvictor(),
+        databaseProvider
+    )
+}
+
+val dataSourceFactory: DefaultDataSource.Factory by lazy {
+    val cookieManager = CookieManager()
+    cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ORIGINAL_SERVER)
+    CookieHandler.setDefault(cookieManager)
+    return@lazy DefaultDataSource.Factory(this)
+}
+
+val downloadManager: DownloadManager by lazy {
+    DownloadManager(
+        this,
+        databaseProvider,
+        downloadCache,
+        dataSourceFactory,
+        Runnable::run
+    )
+}
+
+@Synchronized
+fun getDataSourceFactory(): DataSource.Factory =
+    CacheDataSource.Factory()
+        .setCache(downloadCache)
+        .setUpstreamDataSourceFactory(
+            DefaultDataSource.Factory(
+                this, dataSourceFactory
+            )
+        )
+        .setCacheWriteDataSinkFactory(null)
+        .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 }

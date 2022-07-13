@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_search_podcasts"
+        android:icon="@android:drawable/ic_menu_search"
+        app:iconTint="@color/white"
+        app:showAsAction="always"
+        app:iconifiedByDefault="false"
+        android:iconifiedByDefault="false"
+        app:actionViewClass="androidx.appcompat.widget.SearchView"
+        android:title="@string/add_podcast" />
+</menu>

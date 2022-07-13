@@ -1,7 +1,18 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">PodTitles</string>
-    <string name="title_home">Home</string>
-    <string name="title_dashboard">Dashboard</string>
-    <string name="title_notifications">Notifications</string>
+    <string name="fragment_title_feed_list">Feed list</string>
+    <string name="fragment_title_search_podcasts">Search podcasts</string>
+    <string name="fragment_title_search_result">Search result</string>
+    <string name="fragment_title_feed_details">Feed</string>
+    <string name="fragment_title_episode_details">Episode</string>
+    <string name="title_episode">Episode</string>
     <string name="download_notification_message">Download complete</string>
+    <string name="search_hint">Search podcasts</string>
+    <string name="add_podcast">Add podcast</string>
+    <string name="loading">Loading…</string>
+    <string name="fab_add_feed">Add feed</string>
+    <string name="fab_remove_feed">Remove feed</string>
+    <string name="feed_added_success">New feed added!</string>
+    <string name="feed_added_failure">Could not add feed.</string>
+    <string name="default_logo_description">Podcast logo</string>
 </resources>

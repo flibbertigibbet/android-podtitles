@@ -1,4 +1,4 @@
-package dev.banderkat.podtitles.ui.home
+package dev.banderkat.podtitles.episode
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -26,7 +26,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.work.*
 import com.google.common.collect.ImmutableList
 import dev.banderkat.podtitles.PodTitlesApplication
-import dev.banderkat.podtitles.databinding.FragmentHomeBinding
+import dev.banderkat.podtitles.databinding.FragmentEpisodeBinding
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
 import dev.banderkat.podtitles.player.PodTitlesDownloadService
 import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
@@ -36,9 +36,9 @@ import java.io.File
 
 const val MEDIA_URI = "https://storage.googleapis.com/exoplayer-test-media-0/play.mp3"
 
-class HomeFragment : Fragment() {
+class EpisodeFragment : Fragment() {
 
-    private var _binding: FragmentHomeBinding? = null
+    private var _binding: FragmentEpisodeBinding? = null
 
     private var player: ExoPlayer? = null
     private var playWhenReady = true
@@ -64,29 +64,27 @@ class HomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val homeViewModel =
-            ViewModelProvider(this).get(HomeViewModel::class.java)
+        val episodeViewModel =
+            ViewModelProvider(this)[EpisodeViewModel::class.java]
 
-        _binding = FragmentHomeBinding.inflate(inflater, container, false)
+        _binding = FragmentEpisodeBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        homeViewModel.text.observe(viewLifecycleOwner) {
+        episodeViewModel.text.observe(viewLifecycleOwner) {
             // FIXME: remove
         }
 
-        return root
-    }
-
-    override fun onStart() {
-        super.onStart()
         requireActivity().registerReceiver(
             downloadCompleteBroadcast,
             IntentFilter(DOWNLOAD_FINISHED_ACTION)
         )
 
-        sendDownloadRequest()
+        // FIXME
+        //searchPodcasts("swim")
+        // fetchPodcast("example_feed.xml")
+        // sendDownloadRequest()
 
-        // initializePlayer()
+        return root
     }
 
     override fun onPause() {
@@ -155,7 +153,7 @@ class HomeFragment : Fragment() {
     private fun startPlayer() {
         if (mediaItem == null || player == null) return
 
-        val subtitleUri = Uri.fromFile(File(subtitleFilePath))
+        val subtitleUri = Uri.fromFile(File(subtitleFilePath!!))
         Log.d("Player", "Got path to subtitles: $subtitleUri")
 
         Log.d("Player", "Existing media item URI: ${mediaItem?.localConfiguration?.uri}")
@@ -211,18 +209,18 @@ class HomeFragment : Fragment() {
                             SUBTITLE_FILE_PATH_PARAM
                         )
                         Log.d(
-                            "HomeFragment",
+                            "EpisodeFragment",
                             "Transcription worker successfully wrote file $subtitlePath"
                         )
                         subtitleFilePath = subtitlePath
                         startPlayer()
                     }
                     WorkInfo.State.FAILED -> {
-                        Log.e("HomeFragment", "Transcription worker failed")
+                        Log.e("EpisodeFragment", "Transcription worker failed")
                     }
                     else -> {
                         Log.d(
-                            "HomeFragment",
+                            "EpisodeFragment",
                             "Transcription worker moved to state ${workInfo?.state}"
                         )
                     }

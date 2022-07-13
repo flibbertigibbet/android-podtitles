@@ -3,23 +3,55 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_home">
-
+    app:startDestination="@id/feedListFragment">
     <fragment
-        android:id="@+id/navigation_home"
-        android:name="dev.banderkat.podtitles.ui.home.HomeFragment"
-        android:label="@string/title_home"
-        tools:layout="@layout/fragment_home" />
-
+        android:id="@+id/feedListFragment"
+        android:name="dev.banderkat.podtitles.feedlist.FeedListFragment"
+        android:label="@string/fragment_title_feed_list" >
+        <action
+            android:id="@+id/action_feedListFragment_to_feedDetailsFragment"
+            app:destination="@id/feedDetailsFragment" />
+        <action
+            android:id="@+id/action_feedListFragment_to_searchPodFragment"
+            app:destination="@id/searchPodFragment" />
+    </fragment>
     <fragment
-        android:id="@+id/navigation_dashboard"
-        android:name="dev.banderkat.podtitles.ui.dashboard.DashboardFragment"
-        android:label="@string/title_dashboard"
-        tools:layout="@layout/fragment_dashboard" />
-
+        android:id="@+id/episodeFragment"
+        android:name="dev.banderkat.podtitles.episode.EpisodeFragment"
+        android:label="@string/fragment_title_episode_details"
+        tools:layout="@layout/fragment_episode" >
+        <argument
+            android:name="episode"
+            app:argType="dev.banderkat.podtitles.models.PodEpisode" />
+    </fragment>
     <fragment
-        android:id="@+id/navigation_notifications"
-        android:name="dev.banderkat.podtitles.ui.notifications.NotificationsFragment"
-        android:label="@string/title_notifications"
-        tools:layout="@layout/fragment_notifications" />
+        android:id="@+id/feedDetailsFragment"
+        android:name="dev.banderkat.podtitles.feeddetails.FeedDetailsFragment"
+        android:label="@string/fragment_title_feed_details" >
+        <action
+            android:id="@+id/action_feedDetailsFragment_to_episodeFragment"
+            app:destination="@id/episodeFragment" />
+        <argument
+            android:name="feed"
+            app:argType="dev.banderkat.podtitles.models.PodFeed" />
+    </fragment>
+    <fragment
+        android:id="@+id/searchResultFragment"
+        android:name="dev.banderkat.podtitles.search.SearchResultFragment"
+        android:label="@string/fragment_title_search_result" >
+        <action
+            android:id="@+id/action_searchResultFragment_to_feedDetailsFragment"
+            app:destination="@id/feedDetailsFragment" />
+        <argument
+            android:name="searchResult"
+            app:argType="dev.banderkat.podtitles.models.GpodderSearchResult" />
+    </fragment>
+    <fragment
+        android:id="@+id/searchPodFragment"
+        android:name="dev.banderkat.podtitles.search.SearchPodFragment"
+        android:label="@string/fragment_title_search_podcasts" >
+        <action
+            android:id="@+id/action_searchPodFragment_to_searchResultFragment"
+            app:destination="@id/searchResultFragment" />
+    </fragment>
 </navigation>
