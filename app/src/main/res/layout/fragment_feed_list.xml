@@ -15,5 +15,5 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:itemCount="3"
-        tools:listitem="@layout/feed_list_item" />
+        tools:listitem="@layout/feed_card" />
 </androidx.constraintlayout.widget.ConstraintLayout>

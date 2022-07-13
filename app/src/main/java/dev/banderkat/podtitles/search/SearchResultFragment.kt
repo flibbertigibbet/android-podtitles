@@ -5,13 +5,10 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
-import androidx.swiperefreshlayout.widget.CircularProgressDrawable
-import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentSearchResultBinding
@@ -33,6 +30,7 @@ class SearchResultFragment : Fragment() {
         ViewModelProvider(this)[SearchResultViewModel::class.java]
     }
     private var podFeed: PodFeed? = null
+    private var feedAdded = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -65,6 +63,14 @@ class SearchResultFragment : Fragment() {
         viewModel.getFeed(httpsFeedUri).observe(viewLifecycleOwner) { feed ->
             Log.d(TAG, "Existing feed for this URL is $feed")
             podFeed = feed
+
+            // go to feed details after adding new feed
+            if (feedAdded && podFeed != null) {
+                findNavController().navigate(
+                    R.id.action_searchResultFragment_to_feedDetailsFragment
+                )
+            }
+
             changeFab(feed != null)
         }
     }
@@ -108,9 +114,7 @@ class SearchResultFragment : Fragment() {
                 if (itWorked) {
                     Log.d(TAG, "Feed added successfully! Go to feed details")
                     snackText = getString(R.string.feed_added_success)
-                    findNavController().navigate(
-                        R.id.action_searchResultFragment_to_feedDetailsFragment
-                    )
+                    feedAdded = true
                 } else {
                     Log.d(TAG, "Feed could not be added. Show an error")
                     snackText = getString(R.string.feed_added_failure)

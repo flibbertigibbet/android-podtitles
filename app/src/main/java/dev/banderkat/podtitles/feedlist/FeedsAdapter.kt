@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dev.banderkat.podtitles.R
-import dev.banderkat.podtitles.databinding.FeedListItemBinding
+import dev.banderkat.podtitles.databinding.FeedCardBinding
 import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.utils.Utils
 
@@ -16,12 +16,11 @@ class FeedsAdapter(private val onClickListener: OnClickListener, private val con
     ListAdapter<PodFeed, FeedsAdapter.PodFeedViewHolder>(DiffCallback) {
 
     class PodFeedViewHolder(
-        private val binding: FeedListItemBinding,
+        private val binding: FeedCardBinding,
         private val context: Context
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(feed: PodFeed) {
-            Log.d("FeedsAdapter", "binding a view holder")
             binding.apply {
                 feedCardTitle.text = feed.title
                 feedCardAuthor.text = feed.author
@@ -56,7 +55,7 @@ class FeedsAdapter(private val onClickListener: OnClickListener, private val con
     ): PodFeedViewHolder {
         Log.d("FeedsAdapter", "creating a view holder")
         return PodFeedViewHolder(
-            FeedListItemBinding.inflate(
+            FeedCardBinding.inflate(
                 LayoutInflater.from(parent.context),
                 parent,
                 false
