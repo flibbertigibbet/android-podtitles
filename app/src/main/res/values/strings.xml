@@ -14,4 +14,5 @@
     <string name="fab_remove_feed">Remove feed</string>
     <string name="feed_added_success">New feed added!</string>
     <string name="feed_added_failure">Could not add feed.</string>
+    <string name="default_logo_description">Podcast logo</string>
 </resources>

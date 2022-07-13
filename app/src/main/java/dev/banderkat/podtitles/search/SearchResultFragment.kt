@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
@@ -22,8 +23,6 @@ import dev.banderkat.podtitles.utils.Utils
 class SearchResultFragment : Fragment() {
     companion object {
         const val TAG = "SearchResultFragment"
-        const val GLIDE_LOADER_STROKE_WIDTH = 5f
-        const val GLIDE_LOADER_CENTER_RADIUS = 30f
     }
 
     private var _binding: FragmentSearchResultBinding? = null
@@ -55,7 +54,8 @@ class SearchResultFragment : Fragment() {
             searchResultCardAuthor.text = searchResult.author
             searchResultCardLink.text = searchResult.website
             searchResultCardDescription.text = searchResult.description
-            loadImage(searchResult.logoUrl)
+            searchResultImage.contentDescription = getString(R.string.default_logo_description)
+            Utils.loadLogo(searchResult.logoUrl, requireContext(), searchResultImage)
 
             searchResultCardAddFeedFab.setOnClickListener {
                 if (podFeed != null) viewModel.removeFeed(podFeed!!) else addFeed(httpsFeedUri)
@@ -119,27 +119,6 @@ class SearchResultFragment : Fragment() {
 
                 Snackbar.make(searchResultCard, snackText, Snackbar.LENGTH_SHORT).show()
             }
-        }
-    }
-
-    private fun loadImage(logoUrl: String?) {
-        if (logoUrl.isNullOrEmpty()) {
-            binding.searchResultImage.setImageResource(R.drawable.ic_headphones)
-        } else {
-            // ensure URL is HTTPS before attempting to load it
-            val httpsLogoUri = Utils.convertToHttps(logoUrl)
-
-            val circularProgressDrawable = CircularProgressDrawable(requireContext())
-            circularProgressDrawable.strokeWidth = GLIDE_LOADER_STROKE_WIDTH
-            circularProgressDrawable.centerRadius = GLIDE_LOADER_CENTER_RADIUS
-            circularProgressDrawable.start()
-
-            Glide.with(this@SearchResultFragment)
-                .load(httpsLogoUri)
-                .placeholder(circularProgressDrawable)
-                .fitCenter()
-                .error(R.drawable.ic_headphones)
-                .into(binding.searchResultImage)
         }
     }
 }
