@@ -30,8 +30,8 @@ class SearchResultFragment : Fragment() {
     private val binding get() = _binding!!
     private val args: SearchResultFragmentArgs by navArgs()
     private lateinit var searchResult: GpodderSearchResult
-    private val viewModel: SearchViewModel by lazy {
-        ViewModelProvider(this)[SearchViewModel::class.java]
+    private val viewModel: SearchResultViewModel by lazy {
+        ViewModelProvider(this)[SearchResultViewModel::class.java]
     }
     private var podFeed: PodFeed? = null
 
@@ -65,24 +65,34 @@ class SearchResultFragment : Fragment() {
         viewModel.getFeed(httpsFeedUri).observe(viewLifecycleOwner) { feed ->
             Log.d(TAG, "Existing feed for this URL is $feed")
             podFeed = feed
-            if (feed != null) {
-                // already subscribed; change button to remove feed instead of add it
-                // TODO: also change color?
-                binding.searchResultCardAddFeedFab.setImageDrawable(
+            changeFab(feed != null)
+        }
+    }
+
+    private fun changeFab(alreadySubscribed: Boolean) {
+        if (alreadySubscribed) {
+            // change button to remove feed instead of add it
+            // TODO: also change color?
+            binding.searchResultCardAddFeedFab.apply {
+                setImageDrawable(
                     resources.getDrawable(
                         com.google.android.material.R.drawable.ic_m3_chip_close,
                         requireContext().theme
                     )
                 )
-            } else {
-                binding.searchResultCardAddFeedFab.setImageDrawable(
+                contentDescription = getString(R.string.fab_remove_feed)
+            }
+        } else {
+            // add feed button
+            binding.searchResultCardAddFeedFab.apply {
+                setImageDrawable(
                     resources.getDrawable(
                         android.R.drawable.ic_input_add,
                         requireContext().theme
                     )
                 )
+                contentDescription = getString(R.string.fab_add_feed)
             }
-
         }
     }
 

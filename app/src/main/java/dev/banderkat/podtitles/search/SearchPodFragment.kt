@@ -77,6 +77,7 @@ class SearchPodFragment : Fragment() {
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                Log.d(TAG, "menu item selected; clear search")
                 viewModel.updateSearchQuery("") // clear the search
                 searchView.onActionViewCollapsed() // close the search bar
                 findNavController().navigateUp() // go back to the feed list

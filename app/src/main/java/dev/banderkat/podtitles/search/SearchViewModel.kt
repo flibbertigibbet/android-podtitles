@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.lifecycle.*
 import androidx.work.*
 import dev.banderkat.podtitles.database.getDatabase
-import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.workers.PODCAST_QUERY_PARAM
 import dev.banderkat.podtitles.workers.PodcastSearchWorker
 import kotlinx.coroutines.Dispatchers
@@ -63,16 +62,6 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
         super.onCleared()
     }
 
-    fun getFeed(feedUrl: String): LiveData<PodFeed?> {
-        return database.podDao.getFeed(feedUrl)
-    }
-
-    fun removeFeed(feed: PodFeed) {
-        viewModelScope.launch(Dispatchers.IO) {
-            database.podDao.deleteFeed(feed)
-        }
-    }
-
     fun updateSearchQuery(query: String) {
         _searchQuery.postValue(query)
         if (query.isBlank()) clearSearch() else searchPodcasts(query)
@@ -100,7 +89,6 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
 
         workManager.enqueue(searchRequest)
         val searchWorkers = workManager.getWorkInfoByIdLiveData(searchRequest.id)
-
         searchWorkers.observeForever(searchObserver)
     }
 

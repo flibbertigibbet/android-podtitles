@@ -11,6 +11,7 @@
     <string name="add_podcast">Add podcast</string>
     <string name="loading">Loading…</string>
     <string name="fab_add_feed">Add feed</string>
+    <string name="fab_remove_feed">Remove feed</string>
     <string name="feed_added_success">New feed added!</string>
     <string name="feed_added_failure">Could not add feed.</string>
 </resources>
