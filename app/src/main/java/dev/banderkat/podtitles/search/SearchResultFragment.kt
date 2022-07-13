@@ -1,6 +1,5 @@
 package dev.banderkat.podtitles.search
 
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -16,7 +15,7 @@ import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentSearchResultBinding
 import dev.banderkat.podtitles.models.GpodderSearchResult
 import dev.banderkat.podtitles.utils.AddFeed
-import java.net.URL
+import dev.banderkat.podtitles.utils.Utils
 
 class SearchResultFragment : Fragment() {
     companion object {
@@ -50,51 +49,54 @@ class SearchResultFragment : Fragment() {
             searchResultCardAuthor.text = searchResult.author
             searchResultCardLink.text = searchResult.website
             searchResultCardDescription.text = searchResult.description
+            loadImage(searchResult.logoUrl)
 
             searchResultCardAddFeedFab.setOnClickListener {
                 Log.d(TAG, "clicked to add feed ${searchResult.url}")
-                searchResultCardFabProgress.visibility = View.VISIBLE
-                searchResultCardAddFeedFab.isEnabled = false
-                AddFeed(requireContext(), viewLifecycleOwner, searchResult.url) { itWorked ->
-                    searchResultCardFabProgress.visibility = View.INVISIBLE
+                binding.apply {
+                    searchResultCardFabProgress.visibility = View.VISIBLE
+                    searchResultCardAddFeedFab.isEnabled = false
+                    AddFeed(requireContext(), viewLifecycleOwner, searchResult.url) { itWorked ->
+                        searchResultCardFabProgress.visibility = View.INVISIBLE
 
-                    var snackText = ""
-                    if (itWorked) {
-                        Log.d(TAG, "Feed added successfully! Go to feed details")
-                        snackText = getString(R.string.feed_added_success)
-                        findNavController().navigate(R.id.action_searchResultFragment_to_feedDetailsFragment)
-                    } else {
-                        Log.d(TAG, "Feed could not be added. Show an error")
-                        snackText = getString(R.string.feed_added_failure)
-                        searchResultCardAddFeedFab.isEnabled = true
+                        var snackText = ""
+                        if (itWorked) {
+                            Log.d(TAG, "Feed added successfully! Go to feed details")
+                            snackText = getString(R.string.feed_added_success)
+                            findNavController().navigate(
+                                R.id.action_searchResultFragment_to_feedDetailsFragment
+                            )
+                        } else {
+                            Log.d(TAG, "Feed could not be added. Show an error")
+                            snackText = getString(R.string.feed_added_failure)
+                            searchResultCardAddFeedFab.isEnabled = true
+                        }
+
+                        Snackbar.make(searchResultCard, snackText, Snackbar.LENGTH_SHORT).show()
                     }
-
-                    Snackbar.make(searchResultCard, snackText, Snackbar.LENGTH_SHORT).show()
                 }
             }
+        }
+    }
 
-            if (searchResult.logoUrl.isNullOrEmpty()) {
-                searchResultImage.setImageResource(R.drawable.ic_headphones)
-            } else {
-                // ensure URL is HTTPS before attempting to load it
-                val httpsLogoUri = Uri.parse(searchResult.logoUrl)
-                    .buildUpon()
-                    .scheme("https")
-                    .build()
-                    .toString()
+    private fun loadImage(logoUrl: String?) {
+        if (logoUrl.isNullOrEmpty()) {
+            binding.searchResultImage.setImageResource(R.drawable.ic_headphones)
+        } else {
+            // ensure URL is HTTPS before attempting to load it
+            val httpsLogoUri = Utils.convertToHttps(logoUrl)
 
-                val circularProgressDrawable = CircularProgressDrawable(requireContext())
-                circularProgressDrawable.strokeWidth = GLIDE_LOADER_STROKE_WIDTH
-                circularProgressDrawable.centerRadius = GLIDE_LOADER_CENTER_RADIUS
-                circularProgressDrawable.start()
+            val circularProgressDrawable = CircularProgressDrawable(requireContext())
+            circularProgressDrawable.strokeWidth = GLIDE_LOADER_STROKE_WIDTH
+            circularProgressDrawable.centerRadius = GLIDE_LOADER_CENTER_RADIUS
+            circularProgressDrawable.start()
 
-                Glide.with(this@SearchResultFragment)
-                    .load(httpsLogoUri)
-                    .placeholder(circularProgressDrawable)
-                    .fitCenter()
-                    .error(R.drawable.ic_headphones)
-                    .into(searchResultImage)
-            }
+            Glide.with(this@SearchResultFragment)
+                .load(httpsLogoUri)
+                .placeholder(circularProgressDrawable)
+                .fitCenter()
+                .error(R.drawable.ic_headphones)
+                .into(binding.searchResultImage)
         }
     }
 }

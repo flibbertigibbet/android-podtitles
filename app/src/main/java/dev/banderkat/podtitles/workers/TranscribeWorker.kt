@@ -26,13 +26,6 @@ import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
 import kotlin.math.roundToInt
 
-const val TAG = "TranscribeWorker"
-const val FFMPEG_PARAMS = "-ac 1 -ar 16000 -f wav -y"
-const val SAMPLE_RATE = 16000.0f
-const val BUFFER_SIZE_SECONDS = 0.2f
-const val VOSK_MODEL_ASSET = "model-en-us"
-const val VOSK_MODEL_NAME = "model"
-const val SUBTITLE_FILE_EXTENSION = ".ttml"
 const val AUDIO_FILE_PATH_PARAM = "input_audio_path"
 const val SUBTITLE_FILE_PATH_PARAM = "output_ttml_path"
 
@@ -42,6 +35,15 @@ const val SUBTITLE_FILE_PATH_PARAM = "output_ttml_path"
 @Suppress("TooGenericExceptionCaught")
 class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
     Worker(appContext, workerParams) {
+    companion object {
+        const val TAG = "TranscribeWorker"
+        const val FFMPEG_PARAMS = "-ac 1 -ar 16000 -f wav -y"
+        const val SAMPLE_RATE = 16000.0f
+        const val BUFFER_SIZE_SECONDS = 0.2f
+        const val VOSK_MODEL_ASSET = "model-en-us"
+        const val VOSK_MODEL_NAME = "model"
+        const val SUBTITLE_FILE_EXTENSION = ".ttml"
+    }
 
     private val xmlDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
     private var subtitleDocument: Document? = xmlDocumentBuilder.newDocument()

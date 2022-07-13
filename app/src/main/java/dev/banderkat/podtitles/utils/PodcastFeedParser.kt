@@ -7,7 +7,11 @@ import dev.banderkat.podtitles.database.PodDatabase
 import dev.banderkat.podtitles.database.getDatabase
 import dev.banderkat.podtitles.models.PodEpisode
 import dev.banderkat.podtitles.models.PodFeed
+import okhttp3.OkHttp
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.xmlpull.v1.XmlPullParser
+import java.io.InputStream
 
 /**
  * Parse the RSS of a podcast feed. Looks for fields defined by iTunes:
@@ -22,6 +26,7 @@ import org.xmlpull.v1.XmlPullParser
 
 class PodcastFeedParser(
     private val context: Context,
+    private val okHttpClient: OkHttpClient,
     private val feedUrl: String,
     private val displayOrder: Int
 ) {
@@ -29,7 +34,7 @@ class PodcastFeedParser(
         const val TAG = "FeedParser"
     }
 
-    private val database: PodDatabase
+    private val database: PodDatabase = getDatabase(context)
     private val parser = Xml.newPullParser()
     private val parseUtils = RSSParsingUtils(parser)
 
@@ -59,7 +64,7 @@ class PodcastFeedParser(
         "link" to "link", // required by RSS 2.0, but not by iTunes?
         "itunes:new-feed-url" to "newUrl", // used for moved feeds
         "copyright" to "copyright",
-        "itunes:complete" to "complete", // Yes if no more episodes will be published to this feed
+        "itunes:complete" to null, // Yes if no more episodes will be published to this feed
         "itunes:summary" to null, // use if description is missing
 
         // non-iTunes optional RSS fields
@@ -93,21 +98,27 @@ class PodcastFeedParser(
     )
 
     init {
-        database = getDatabase(context)
         channelMap["url"] = feedUrl
         channelMap["displayOrder"] = displayOrder
     }
 
     fun fetchFeed() {
         Log.d(TAG, "Fetching podcast feed from $feedUrl...")
-        parseFeed()
+        val request: Request = Request.Builder().url(feedUrl).build()
+        okHttpClient.newCall(request).execute().use { response ->
+            if (response.isSuccessful) {
+                parseFeed(response.body!!.byteStream())
+            } else {
+                error("Podcast request failed with HTTP code ${response.code}")
+            }
+        }
         Log.d(TAG, "Feed fetch for podcast at $feedUrl complete. Found ${episodes.size} episodes.")
     }
 
-    private fun parseFeed() {
-        val reader = context.assets.open(feedUrl)
+    private fun parseFeed(rawXml: InputStream) {
         parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
-        parser.setInput(reader.reader())
+        val reader = rawXml.reader(Charsets.UTF_8)
+        parser.setInput(reader)
         parser.nextTag()
         parser.require(XmlPullParser.START_TAG, null, "rss")
 
@@ -173,6 +184,10 @@ class PodcastFeedParser(
             "itunes:summary" -> {
                 val summary = parseUtils.readString(parser.name)
                 if (!channelMap.containsKey("description")) channelMap["description"] = summary
+            }
+            "itunes:complete" -> {
+                val completeStr = parseUtils.readString(parser.name)
+                channelMap["complete"] = completeStr.lowercase() == "yes"
             }
             else -> Log.w(TAG, "Do not know how to parse ${parser.name}")
         }
