@@ -15,6 +15,8 @@ import java.io.File
 import java.net.CookieHandler
 import java.net.CookieManager
 import java.net.CookiePolicy
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.SSLSession
 
 class PodTitlesApplication : Application() {
     companion object {
@@ -31,48 +33,49 @@ class PodTitlesApplication : Application() {
                     maxSize = cacheMaxSize
                 )
             )
+            .hostnameVerifier { _, _ -> true } // many feeds fail hostname verification
             .build()
     }
 
-    // Cache management singletons for ExoPlayer
-    val databaseProvider: DatabaseProvider by lazy {
-        StandaloneDatabaseProvider(this)
-    }
+// Cache management singletons for ExoPlayer
+val databaseProvider: DatabaseProvider by lazy {
+    StandaloneDatabaseProvider(this)
+}
 
-    val downloadCache: androidx.media3.datasource.cache.Cache by lazy {
-        SimpleCache(
-            File(this.filesDir, DOWNLOAD_CONTENT_DIRECTORY),
-            NoOpCacheEvictor(),
-            databaseProvider
-        )
-    }
+val downloadCache: androidx.media3.datasource.cache.Cache by lazy {
+    SimpleCache(
+        File(this.filesDir, DOWNLOAD_CONTENT_DIRECTORY),
+        NoOpCacheEvictor(),
+        databaseProvider
+    )
+}
 
-    val dataSourceFactory: DefaultDataSource.Factory by lazy {
-        val cookieManager = CookieManager()
-        cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ORIGINAL_SERVER)
-        CookieHandler.setDefault(cookieManager)
-        return@lazy DefaultDataSource.Factory(this)
-    }
+val dataSourceFactory: DefaultDataSource.Factory by lazy {
+    val cookieManager = CookieManager()
+    cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ORIGINAL_SERVER)
+    CookieHandler.setDefault(cookieManager)
+    return@lazy DefaultDataSource.Factory(this)
+}
 
-    val downloadManager: DownloadManager by lazy {
-        DownloadManager(
-            this,
-            databaseProvider,
-            downloadCache,
-            dataSourceFactory,
-            Runnable::run
-        )
-    }
+val downloadManager: DownloadManager by lazy {
+    DownloadManager(
+        this,
+        databaseProvider,
+        downloadCache,
+        dataSourceFactory,
+        Runnable::run
+    )
+}
 
-    @Synchronized
-    fun getDataSourceFactory(): DataSource.Factory =
-        CacheDataSource.Factory()
-            .setCache(downloadCache)
-            .setUpstreamDataSourceFactory(
-                DefaultDataSource.Factory(
-                    this, dataSourceFactory
-                )
+@Synchronized
+fun getDataSourceFactory(): DataSource.Factory =
+    CacheDataSource.Factory()
+        .setCache(downloadCache)
+        .setUpstreamDataSourceFactory(
+            DefaultDataSource.Factory(
+                this, dataSourceFactory
             )
-            .setCacheWriteDataSinkFactory(null)
-            .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+        )
+        .setCacheWriteDataSinkFactory(null)
+        .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 }
