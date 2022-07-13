@@ -5,25 +5,41 @@ import androidx.media3.database.DatabaseProvider
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
-import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.NoOpCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.offline.DownloadManager
 import dev.banderkat.podtitles.player.DOWNLOAD_CONTENT_DIRECTORY
+import okhttp3.OkHttpClient
 import java.io.File
 import java.net.CookieHandler
 import java.net.CookieManager
 import java.net.CookiePolicy
 
 class PodTitlesApplication : Application() {
+    companion object {
+        const val httpCacheDir = "http_cache"
+        const val cacheMaxSize = 50L * 1024L * 1024L // 50 MiB
+    }
+
+    // Caching OkHttp client
+    val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .cache(
+                okhttp3.Cache(
+                    directory = File(cacheDir, httpCacheDir),
+                    maxSize = cacheMaxSize
+                )
+            )
+            .build()
+    }
 
     // Cache management singletons for ExoPlayer
     val databaseProvider: DatabaseProvider by lazy {
         StandaloneDatabaseProvider(this)
     }
 
-    val downloadCache: Cache by lazy {
+    val downloadCache: androidx.media3.datasource.cache.Cache by lazy {
         SimpleCache(
             File(this.filesDir, DOWNLOAD_CONTENT_DIRECTORY),
             NoOpCacheEvictor(),
