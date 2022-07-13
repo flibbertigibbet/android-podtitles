@@ -26,10 +26,9 @@ Worker(appContext, workerParams) {
             val url = inputData.getString(PODCAST_URL_PARAM)
                 ?: error("Missing PodcastFetchWorker parameter $PODCAST_URL_PARAM")
             val displayOrder = inputData.getInt(PODCAST_ORDER_PARAM, -1)
-            val httpsUrl = Utils.convertToHttps(url)
-            Log.d(TAG, "going to fetch podcast feed from $httpsUrl")
+            Log.d(TAG, "going to fetch podcast feed from $url")
             val okHttpClient = (appContext as PodTitlesApplication).okHttpClient
-            PodcastFeedParser(applicationContext, okHttpClient, httpsUrl, displayOrder).fetchFeed()
+            PodcastFeedParser(applicationContext, okHttpClient, url, displayOrder).fetchFeed()
             Result.success()
         } catch (ex: Exception) {
             Log.e(TAG, "Podcast feed fetch failed", ex)
