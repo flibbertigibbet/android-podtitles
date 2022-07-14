@@ -25,6 +25,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.navigation.fragment.navArgs
 import androidx.work.*
 import com.google.common.collect.ImmutableList
+import com.sun.jna.StringArray
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.databinding.FragmentEpisodeBinding
 import dev.banderkat.podtitles.models.PodEpisode
@@ -34,6 +35,7 @@ import dev.banderkat.podtitles.player.PodTitlesDownloadService
 import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
 import dev.banderkat.podtitles.workers.SUBTITLE_FILE_PATH_PARAM
 import dev.banderkat.podtitles.workers.TranscribeWorker
+import dev.banderkat.podtitles.workers.TranscriptMergeWorker
 import java.io.File
 
 // TODO: remove test URI
@@ -153,11 +155,18 @@ class EpisodeFragment : Fragment() {
                     .build()
 
                 // TODO: chain the workers and aggregate the generated files
+                val episodeCacheFiles = app.downloadCache.getCachedSpans(episode.url).map {
+                    it.file!!.absolutePath
+                }
+                transcribe(episodeCacheFiles)
+                /*
                 app.downloadCache.getCachedSpans(episode.url).forEach {
                     val inputFilePath = it.file!!.absolutePath
                     Log.d("Player", "Input file path is: $inputFilePath")
                     transcribe(inputFilePath)
                 }
+
+                 */
             }
     }
 
@@ -200,19 +209,28 @@ class EpisodeFragment : Fragment() {
         player = null
     }
 
-    private fun transcribe(inputFilePath: String) {
-        // launch transcription worker
-        val transcribeRequest = OneTimeWorkRequestBuilder<TranscribeWorker>()
-            .setInputData(workDataOf(AUDIO_FILE_PATH_PARAM to inputFilePath))
+    private fun transcribe(inputFileCachePaths: List<String>) {
+        // launch transcription workers in parallel
+
+        val workers = inputFileCachePaths.map {
+            OneTimeWorkRequestBuilder<TranscribeWorker>()
+                .setInputData(workDataOf(AUDIO_FILE_PATH_PARAM to it))
+                .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
+                .addTag("transcribe") // TODO: move
+                .build()
+        }
+
+        val mergeFileWorker = OneTimeWorkRequestBuilder<TranscriptMergeWorker>()
             .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
-            .addTag("transcribe") // TODO: move
+            .setInputMerger(ArrayCreatingInputMerger::class)
+            .addTag("transcript_merge") // TODO: move
             .build()
 
         val workManager = WorkManager.getInstance(requireContext())
-        workManager.enqueue(transcribeRequest)
+        workManager.beginWith(workers).then(mergeFileWorker).enqueue()
 
         workManager
-            .getWorkInfoByIdLiveData(transcribeRequest.id)
+            .getWorkInfoByIdLiveData(mergeFileWorker.id)
             .observe(viewLifecycleOwner) { workInfo ->
                 when (workInfo?.state) {
                     WorkInfo.State.SUCCEEDED -> {
