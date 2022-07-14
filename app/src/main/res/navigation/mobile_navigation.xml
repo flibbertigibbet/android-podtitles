@@ -23,6 +23,9 @@
         <argument
             android:name="episode"
             app:argType="dev.banderkat.podtitles.models.PodEpisode" />
+        <argument
+            android:name="feed"
+            app:argType="dev.banderkat.podtitles.models.PodFeed" />
     </fragment>
     <fragment
         android:id="@+id/feedDetailsFragment"

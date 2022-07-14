@@ -28,16 +28,13 @@ object Utils {
         if (logoUrl.isNullOrEmpty()) {
             imageView.setImageResource(R.drawable.ic_headphones)
         } else {
-            // ensure URL is HTTPS before attempting to load it
-            val httpsLogoUri = convertToHttps(logoUrl)
-
             val circularProgressDrawable = CircularProgressDrawable(context)
             circularProgressDrawable.strokeWidth = GLIDE_LOADER_STROKE_WIDTH
             circularProgressDrawable.centerRadius = GLIDE_LOADER_CENTER_RADIUS
             circularProgressDrawable.start()
 
             Glide.with(context)
-                .load(httpsLogoUri)
+                .load(logoUrl)
                 .placeholder(circularProgressDrawable)
                 .fitCenter()
                 .error(R.drawable.ic_headphones)

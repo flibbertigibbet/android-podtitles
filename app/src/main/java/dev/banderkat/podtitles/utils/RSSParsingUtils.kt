@@ -1,5 +1,6 @@
 package dev.banderkat.podtitles.utils
 
+import android.text.Html
 import android.util.Log
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
@@ -22,7 +23,9 @@ internal class RSSParsingUtils(private val parser: XmlPullParser) {
     fun readEnclosure(): EpisodeEnclosure {
         parser.require(XmlPullParser.START_TAG, null, "enclosure")
         val enclosure = EpisodeEnclosure()
-        enclosure.url = parser.getAttributeValue(null, "url")
+        enclosure.url = Utils.convertToHttps(
+            parser.getAttributeValue(null, "url")
+        )
         enclosure.type = parser.getAttributeValue(null, "type")
         enclosure.size = try {
             parser.getAttributeValue(null, "length").toInt()
@@ -46,7 +49,7 @@ internal class RSSParsingUtils(private val parser: XmlPullParser) {
                 XmlPullParser.TEXT -> {
                     val str = parser.text
                     when (thisTag) {
-                        "url" -> image.image = str
+                        "url" -> image.image = Utils.convertToHttps(str)
                         "title" -> image.title = str
                         // ignore image link (should be same as feed link)
                     }
@@ -67,7 +70,7 @@ internal class RSSParsingUtils(private val parser: XmlPullParser) {
         val href = parser.getAttributeValue(null, "href")
         parser.nextTag()
         parser.require(XmlPullParser.END_TAG, null, "itunes:image")
-        return href
+        return Utils.convertToHttps(href)
     }
 
     // skip an element (and its children)
@@ -128,5 +131,10 @@ internal class RSSParsingUtils(private val parser: XmlPullParser) {
             Log.w(TAG, "Failed to parse $field and cast it as an integer")
             0
         }
+    }
+
+    @Suppress("SwallowedException")
+    fun readUrl(field: String): String {
+        return Utils.convertToHttps(readString(field))
     }
 }
