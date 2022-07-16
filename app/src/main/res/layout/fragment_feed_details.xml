@@ -54,17 +54,31 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/feed_card_holder" />
 
+        <ProgressBar
+            android:id="@+id/feed_details_episode_list_progress"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/feed_details_episode_rv_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            tools:visibility="gone"
+            android:visibility="visible" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/feed_details_episode_rv"
             android:layout_width="match_parent"
-            android:nestedScrollingEnabled="false"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
+            android:nestedScrollingEnabled="false"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/feed_details_episode_rv_label"
+            android:visibility="gone"
+            tools:visibility="visible"
             tools:itemCount="100"
             tools:listitem="@layout/episode_list_item" />
 

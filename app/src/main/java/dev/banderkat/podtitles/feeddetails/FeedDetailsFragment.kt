@@ -12,6 +12,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentFeedDetailsBinding
 import dev.banderkat.podtitles.feedlist.FeedListFragment
@@ -70,9 +73,17 @@ class FeedDetailsFragment : Fragment() {
 
         binding.feedDetailsEpisodeRv.adapter = adapter
 
+        val dividerDecoration = DividerItemDecoration(
+            binding.feedDetailsEpisodeRv.context,
+            LinearLayoutManager.VERTICAL)
+
+        binding.feedDetailsEpisodeRv.addItemDecoration(dividerDecoration)
+
         viewModel.getEpisodes(feed.url).observe(viewLifecycleOwner) { episodes ->
             Log.d(FeedListFragment.TAG, "Found ${episodes.size} episodes")
             adapter.submitList(episodes)
+            binding.feedDetailsEpisodeListProgress.visibility = View.GONE
+            binding.feedDetailsEpisodeRv.visibility = View.VISIBLE
             adapter.notifyDataSetChanged()
         }
 
