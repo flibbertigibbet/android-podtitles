@@ -9,9 +9,11 @@ import dev.banderkat.podtitles.databinding.EpisodeListItemBinding
 import dev.banderkat.podtitles.models.PodEpisode
 import java.text.DateFormat
 import java.text.SimpleDateFormat
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 import java.util.*
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class EpisodesAdapter(private val onClickListener: OnClickListener) :
     ListAdapter<PodEpisode, EpisodesAdapter.PodEpisodeViewHolder>(DiffCallback) {
@@ -32,9 +34,26 @@ class EpisodesAdapter(private val onClickListener: OnClickListener) :
             } catch (ex: Exception) {
                 ""
             }
+            val duration = try {
+                // first try to parse it as seconds (recommended in standard)
+                episode.duration.toInt().seconds.toString()
+            } catch (ex: Exception) {
+                try {
+                    // next try to parse it as a duration string
+                    val parts = episode.duration.split(":")
+                    var seconds = parts.last().toInt()
+                    if (parts.size > 1) seconds += parts[parts.size - 2].toInt() * 60
+                    if (parts.size == 3) seconds += parts.first().toInt() * 60 * 60
+                    seconds.seconds.toString()
+                } catch (ex: Exception) {
+                    // use it as-is
+                    episode.duration
+                }
+            }
             binding.apply {
                 episodeItemTitle.text = episode.title
-                episodeItemSubtitle.text = formattedPubDate
+                episodeItemPubdate.text = formattedPubDate
+                episodeItemDuration.text = duration
             }
         }
     }

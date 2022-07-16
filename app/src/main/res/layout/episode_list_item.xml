@@ -10,21 +10,32 @@
         style="@style/TextAppearance.AppCompat.Title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:padding="4dp"
+        android:layout_margin="16dp"
         android:textSize="16sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="episode title" />
 
     <TextView
-        android:id="@+id/episode_item_subtitle"
+        android:id="@+id/episode_item_pubdate"
         style="@style/TextAppearance.AppCompat.Caption"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:padding="4dp"
+        android:layout_margin="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/episode_item_title"
-        tools:text="episode subtitle" />
+        tools:text="7/30/22" />
+
+    <TextView
+        android:id="@+id/episode_item_duration"
+        style="@style/TextAppearance.AppCompat.Caption"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/episode_item_title"
+        tools:text="10 minutes" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
