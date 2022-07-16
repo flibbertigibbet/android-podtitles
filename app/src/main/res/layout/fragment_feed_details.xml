@@ -1,65 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:animateLayoutChanges="true"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:animateLayoutChanges="true">
 
-    <FrameLayout
-        android:id="@+id/feed_card_holder"
-        android:animateLayoutChanges="true"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:animateLayoutChanges="true">
 
-        <include
-            android:id="@+id/feed_details_card"
-            layout="@layout/feed_card"
+        <FrameLayout
+            android:id="@+id/feed_card_holder"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
             android:animateLayoutChanges="true"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <include
+                android:id="@+id/feed_details_card"
+                layout="@layout/feed_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:animateLayoutChanges="true" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/feed_details_episode_rv_label"
+            style="@style/TextAppearance.AppCompat.Large"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-    </FrameLayout>
+            android:layout_height="0dp"
+            android:layout_margin="16dp"
+            android:animateLayoutChanges="true"
+            android:text="@string/episodes_list_label"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_holder" />
 
-    <TextView
-        android:id="@+id/feed_details_episode_rv_label"
-        android:animateLayoutChanges="true"
-        style="@style/TextAppearance.AppCompat.Large"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="@string/episodes_list_label"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/feed_card_holder" />
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/feed_card_details_expand_fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="32dp"
+            android:animateLayoutChanges="true"
+            android:contentDescription="@string/feed_card_details_expand_fab_description"
+            android:src="@android:drawable/arrow_down_float"
+            app:elevation="10dp"
+            app:layout_constraintBottom_toBottomOf="@id/feed_card_holder"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_holder" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/feed_card_details_expand_fab"
-        android:animateLayoutChanges="true"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="32dp"
-        android:contentDescription="@string/feed_card_details_expand_fab_description"
-        android:src="@android:drawable/arrow_down_float"
-        app:elevation="10dp"
-        app:layout_constraintBottom_toBottomOf="@id/feed_card_holder"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/feed_card_holder" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/feed_details_episode_rv"
+            android:layout_width="match_parent"
+            android:nestedScrollingEnabled="false"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/feed_details_episode_rv_label"
+            tools:itemCount="100"
+            tools:listitem="@layout/episode_list_item" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/feed_details_episode_rv"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_margin="16dp"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/feed_details_episode_rv_label"
-        tools:itemCount="100"
-        tools:listitem="@layout/episode_list_item" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>
