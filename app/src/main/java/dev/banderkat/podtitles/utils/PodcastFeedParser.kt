@@ -116,22 +116,22 @@ class PodcastFeedParser(
 
     private fun parseFeed(rawXml: InputStream) {
         parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
-        val reader = rawXml.reader(Charsets.UTF_8)
-        parser.setInput(reader)
-        parser.nextTag()
-        parser.require(XmlPullParser.START_TAG, null, "rss")
+        rawXml.reader(Charsets.UTF_8).use {
+            parser.setInput(it)
+            parser.nextTag()
+            parser.require(XmlPullParser.START_TAG, null, "rss")
 
-        while (parser.next() != XmlPullParser.END_TAG) {
-            if (parser.eventType != XmlPullParser.START_TAG) continue
-            if (parser.name == "channel") {
-                val channel = readChannel()
-                database.podDao.addFeed(channel)
-                database.podDao.addEpisodes(episodes)
-            } else {
-                parseUtils.skip()
+            while (parser.next() != XmlPullParser.END_TAG) {
+                if (parser.eventType != XmlPullParser.START_TAG) continue
+                if (parser.name == "channel") {
+                    val channel = readChannel()
+                    database.podDao.addFeed(channel)
+                    database.podDao.addEpisodes(episodes)
+                } else {
+                    parseUtils.skip()
+                }
             }
         }
-        reader.close()
     }
 
     // Read the top-level channel info
@@ -150,11 +150,6 @@ class PodcastFeedParser(
             } else {
                 if (parserName == "item") readItem() else parseUtils.skip()
             }
-        }
-
-        Log.d(TAG, "read channel:")
-        channelMap.forEach { (key, value) ->
-            Log.d(TAG, "$key : $value")
         }
 
         return PodFeed::class.createInstance(channelMap)
@@ -214,15 +209,9 @@ class PodcastFeedParser(
             }
         }
 
-        Log.d(TAG, "read episode:")
-        itemMap.forEach { (key, value) ->
-            Log.d(TAG, "$key : $value")
-        }
-
         // if episode does not have a GUID, use its URL as the GUID
         if (!itemMap.containsKey("guid")) itemMap["guid"] = itemMap["url"].toString()
         episodes.add(PodEpisode::class.createInstance(itemMap))
-        Log.d(TAG, "Added episode. Now have ${episodes.size} episodes")
     }
 
     // handle fields that are not to be parsed as simple strings

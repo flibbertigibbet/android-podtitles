@@ -5,26 +5,8 @@ import android.util.Log
 import androidx.work.Data
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.arthenica.ffmpegkit.FFmpegKit
-import com.arthenica.ffmpegkit.FFmpegKitConfig
 import com.google.common.collect.ImmutableMap
-import org.json.JSONObject
-import org.vosk.Model
-import org.vosk.Recognizer
-import org.vosk.android.StorageService
-import org.w3c.dom.Document
-import org.w3c.dom.Element
 import java.io.File
-import java.io.FileInputStream
-import java.io.IOException
-import java.io.StringWriter
-import javax.xml.parsers.DocumentBuilderFactory
-import javax.xml.transform.ErrorListener
-import javax.xml.transform.TransformerException
-import javax.xml.transform.TransformerFactory
-import javax.xml.transform.dom.DOMSource
-import javax.xml.transform.stream.StreamResult
-import kotlin.math.roundToInt
 
 /**
  * Transcribe a cached audio chunk with Vosk and convert the results to a TTML subtitle file.
@@ -36,10 +18,6 @@ class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters)
         const val TAG = "TranscriptMergeWorker"
     }
 
-    private val xmlDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-    private var subtitleDocument: Document? = xmlDocumentBuilder.newDocument()
-
-
     override fun doWork(): Result {
         return try {
             val inputPaths = inputData.getStringArray(SUBTITLE_FILE_PATH_PARAM)
@@ -48,67 +26,40 @@ class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters)
             for (path in inputPaths) {
                 Log.d(TAG, "Merge got path $path")
             }
-            Result.success(Data(ImmutableMap.of(SUBTITLE_FILE_PATH_PARAM, inputPaths[0])))
-            //Result.success()
+
+            val outputPath = mergeTranscripts(inputPaths)
+            Result.success(Data(ImmutableMap.of(SUBTITLE_FILE_PATH_PARAM, outputPath)))
         } catch (ex: Exception) {
-            Log.e(TAG, "Vosk transcription failed", ex)
+            Log.e(TAG, "Transcription file merge failed", ex)
             Result.failure()
         }
     }
 
-    private fun createSubtitleDocument() {
-        // see TTML format docs: https://www.w3.org/TR/ttml2/
-        subtitleDocument = xmlDocumentBuilder.newDocument()
-        subtitleDocument?.apply {
-            val tt = createElement("tt")
-            val ttAttr = createAttribute("xmlns")
-            ttAttr.value = "http://www.w3.org/ns/ttml"
-            val body = createElement("body")
-            val regionAttr = createAttribute("region")
-            regionAttr.value = "subtitleArea"
-            body.setAttributeNode(regionAttr)
-            tt.appendChild(body)
-            appendChild(tt)
+    /**
+     * Merges together the TTML subscript files from each of the cached audio chunks of a podcast.
+     *
+     * @param transcripts Paths to the TTML files to merge
+     * @return Path to the merged file
+     */
+    private fun mergeTranscripts(transcripts: Array<String>): String {
+        if (transcripts.isEmpty()) error("Missing transcript files to merge")
+        if (transcripts.size == 1) return transcripts[0] // only one file; nothing to merge
 
-            //ttmlParent = createElement("div")
-            //body.appendChild(ttmlParent)
-        }
-    }
-
-    private fun handleFinalResult(hypothesis: String?, outputFilePath: String) {
-        Log.d(TAG, "Vosk final result: $hypothesis")
-
-        val transformer = TransformerFactory.newInstance().newTransformer()
-        transformer.errorListener = object : ErrorListener {
-            override fun warning(warning: TransformerException?) {
-                Log.w(TAG, "XML transformer warning", warning)
+        Log.d(TAG, "Got ${transcripts.size} transcripts to merge")
+        // append the transcripts for additional chunks to the transcript file for the first chunk
+        applicationContext.openFileOutput(transcripts[0], Context.MODE_APPEND).writer()
+            .use { writer ->
+                for (i in 1 until transcripts.size) {
+                    applicationContext.openFileInput(transcripts[i]).reader().use { reader ->
+                        writer.append(reader.readText().removePrefix(WEBVTT_FILE_HEADER))
+                    }
+                }
             }
 
-            override fun error(ex: TransformerException?) {
-                Log.e(TAG, "XML transformer error", ex)
-            }
-
-            override fun fatalError(ex: TransformerException?) {
-                Log.e(TAG, "XML transformer fatal error", ex)
-                if (ex != null) throw ex
-            }
+        for (i in 1 until transcripts.size) {
+            // clean up partial transcripts
+            File(transcripts[i]).delete()
         }
-
-        // write subtitles to file
-        applicationContext.openFileOutput(outputFilePath, Context.MODE_PRIVATE).use {
-            // TODO: remove debug logging
-            val writer = StreamResult(StringWriter())
-
-            val result = StreamResult(it)
-            val domSource = DOMSource(subtitleDocument)
-
-            transformer.transform(domSource, writer)
-
-            val xmlStr = writer.writer.toString()
-            Log.d("Vosk", "generated subtitle doc:")
-            Log.d("Vosk", xmlStr)
-
-            transformer.transform(domSource, result)
-        }
+        return applicationContext.getFileStreamPath(transcripts[0]).absolutePath
     }
 }

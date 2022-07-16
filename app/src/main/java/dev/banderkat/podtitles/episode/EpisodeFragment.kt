@@ -1,5 +1,6 @@
 package dev.banderkat.podtitles.episode
 
+import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -13,6 +14,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.media3.common.C.SELECTION_FLAG_AUTOSELECT
+import androidx.media3.common.C.TRACK_TYPE_DEFAULT
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.TrackSelectionParameters
@@ -32,6 +34,7 @@ import dev.banderkat.podtitles.models.PodEpisode
 import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
 import dev.banderkat.podtitles.player.PodTitlesDownloadService
+import dev.banderkat.podtitles.utils.Utils
 import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
 import dev.banderkat.podtitles.workers.SUBTITLE_FILE_PATH_PARAM
 import dev.banderkat.podtitles.workers.TranscribeWorker
@@ -88,12 +91,8 @@ class EpisodeFragment : Fragment() {
             IntentFilter(DOWNLOAD_FINISHED_ACTION)
         )
 
-        return root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
         sendDownloadRequest()
+        return root
     }
 
     override fun onPause() {
@@ -127,7 +126,7 @@ class EpisodeFragment : Fragment() {
     }
 
     private fun initializePlayer() {
-        if (activity == null || !isAdded) {
+        if (activity == null) {
             Log.w(TAG, "Not attached to an activity; not initializing player")
             return
         }
@@ -138,7 +137,7 @@ class EpisodeFragment : Fragment() {
             .setCacheWriteDataSinkFactory(null) // Disable writing.
 
 
-        player = ExoPlayer.Builder(requireContext())
+        ExoPlayer.Builder(requireContext())
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(requireContext())
                     .setDataSourceFactory(cacheDataSourceFactory)
@@ -146,27 +145,20 @@ class EpisodeFragment : Fragment() {
             .build()
             .also { exoPlayer ->
                 binding.exoPlayer.player = exoPlayer
+                player = exoPlayer
 
                 exoPlayer.trackSelector?.parameters = TrackSelectionParameters
                     .getDefaults(requireContext())
                     .buildUpon()
                     .setPreferredTextLanguage(feed.language) // will not display if language not set
-                    // .setTrackTypeDisabled(TRACK_TYPE_DEFAULT, true) // otherwise doubled TODO: now it isn't?
+                    .setTrackTypeDisabled(TRACK_TYPE_DEFAULT, true) // otherwise sometimes doubled
                     .build()
 
-                // TODO: chain the workers and aggregate the generated files
                 val episodeCacheFiles = app.downloadCache.getCachedSpans(episode.url).map {
                     it.file!!.absolutePath
                 }
-                transcribe(episodeCacheFiles)
-                /*
-                app.downloadCache.getCachedSpans(episode.url).forEach {
-                    val inputFilePath = it.file!!.absolutePath
-                    Log.d("Player", "Input file path is: $inputFilePath")
-                    transcribe(inputFilePath)
-                }
 
-                 */
+                transcribe(episodeCacheFiles)
             }
     }
 
@@ -179,7 +171,7 @@ class EpisodeFragment : Fragment() {
         Log.d("Player", "Existing media item URI: ${mediaItem?.localConfiguration?.uri}")
 
         val subtitle = MediaItem.SubtitleConfiguration.Builder(subtitleUri)
-            .setMimeType(MimeTypes.APPLICATION_TTML)
+            .setMimeType(MimeTypes.TEXT_VTT)
             .setLanguage("en")
             .setSelectionFlags(SELECTION_FLAG_AUTOSELECT)
             .build()
@@ -211,6 +203,23 @@ class EpisodeFragment : Fragment() {
 
     private fun transcribe(inputFileCachePaths: List<String>) {
         // launch transcription workers in parallel
+
+        // First check if this episode has already been transcribed
+        val localSubtitlePath = Utils.getSubtitlePathForAudioCachePath(
+            inputFileCachePaths[0]
+        )
+
+        val expectedSubtitlePath = requireContext()
+            .applicationContext
+            .getFileStreamPath(localSubtitlePath)
+            .absolutePath
+
+        if (File(expectedSubtitlePath).exists()) {
+            Log.d(TAG, "Episode already transcribed; using existing subtitles")
+            subtitleFilePath = expectedSubtitlePath
+            startPlayer()
+            return
+        }
 
         val workers = inputFileCachePaths.map {
             OneTimeWorkRequestBuilder<TranscribeWorker>()

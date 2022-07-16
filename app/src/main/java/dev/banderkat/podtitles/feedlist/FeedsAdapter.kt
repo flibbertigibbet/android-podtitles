@@ -53,7 +53,6 @@ class FeedsAdapter(private val onClickListener: OnClickListener, private val con
         parent: ViewGroup,
         viewType: Int
     ): PodFeedViewHolder {
-        Log.d("FeedsAdapter", "creating a view holder")
         return PodFeedViewHolder(
             FeedCardBinding.inflate(
                 LayoutInflater.from(parent.context),

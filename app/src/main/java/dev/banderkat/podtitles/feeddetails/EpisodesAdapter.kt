@@ -45,7 +45,6 @@ class EpisodesAdapter(private val onClickListener: OnClickListener) :
         parent: ViewGroup,
         viewType: Int
     ): PodEpisodeViewHolder {
-        Log.d("FeedsAdapter", "creating a view holder")
         return PodEpisodeViewHolder(
             EpisodeListItemBinding.inflate(
                 LayoutInflater.from(parent.context),
