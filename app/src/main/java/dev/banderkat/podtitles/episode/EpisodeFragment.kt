@@ -196,24 +196,20 @@ class EpisodeFragment : Fragment() {
     }
 
     private fun transcribe(cacheSpans: NavigableSet<CacheSpan>) {
-        val cachedChunks = cacheSpans.map {
+        val cachedChunks = cacheSpans.mapIndexed { index, span ->
             AudioCacheChunk(
-                it.position, it.file!!.absolutePath, null
+                index, span.file!!.absolutePath, null
             )
         }
         // First check if this episode has already been transcribed
-        val localSubtitlePath = Utils.getSubtitlePathForAudioCachePath(
+        val localSubtitlePath = Utils.getSubtitlePathForCachePath(
             cachedChunks[0].filePath
         )
 
-        val expectedSubtitlePath = requireContext()
-            .applicationContext
-            .getFileStreamPath(localSubtitlePath)
-            .absolutePath
-
-        if (File(expectedSubtitlePath).exists()) {
+        val fileStreamPath = requireContext().getFileStreamPath(localSubtitlePath)
+        if (fileStreamPath.exists()) {
             Log.d(TAG, "Episode already transcribed; using existing subtitles")
-            subtitleFilePath = expectedSubtitlePath
+            subtitleFilePath = fileStreamPath.absolutePath
             startPlayer()
             return
         }

@@ -5,7 +5,7 @@ package dev.banderkat.podtitles.models
  * Used in transcribing a series of chunks to generate subtitles for an entire audio file.
  */
 data class AudioCacheChunk(
-    val position: Long, // byte offset where chunk starts
+    val position: Int, // order of this chunk in the set chunks for this file
     val filePath: String, // may be either path to audio file or its transcript
     val duration: Double? = null // duration in seconds for this chunk, as read by FFmpeg
 ) {

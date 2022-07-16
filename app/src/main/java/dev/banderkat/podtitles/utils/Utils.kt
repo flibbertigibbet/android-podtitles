@@ -7,6 +7,7 @@ import androidx.swiperefreshlayout.widget.CircularProgressDrawable
 import com.bumptech.glide.Glide
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.workers.TranscribeWorker
+import dev.banderkat.podtitles.workers.TranscriptMergeWorker
 import java.io.File
 
 /**
@@ -17,8 +18,12 @@ object Utils {
     private const val GLIDE_LOADER_STROKE_WIDTH = 5f
     private const val GLIDE_LOADER_CENTER_RADIUS = 30f
 
-    fun getSubtitlePathForAudioCachePath(audioCachePath: String): String {
-        return "${File(audioCachePath).nameWithoutExtension}${TranscribeWorker.SUBTITLE_FILE_EXTENSION}"
+    fun getSubtitlePathForCachePath(cachePath: String): String {
+        return "${File(cachePath).nameWithoutExtension}${TranscriptMergeWorker.SUBTITLE_FILE_EXTENSION}"
+    }
+
+    fun getIntermediateResultsPathForAudioCachePath(audioCachePath: String): String {
+        return "${File(audioCachePath).nameWithoutExtension}${TranscribeWorker.INTERMEDIATE_RESULTS_FILE_EXTENSION}"
     }
 
     fun convertToHttps(url: String): String {

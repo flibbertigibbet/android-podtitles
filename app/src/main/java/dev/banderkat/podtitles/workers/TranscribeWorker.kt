@@ -8,6 +8,10 @@ import androidx.work.WorkerParameters
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegKitConfig
 import com.arthenica.ffmpegkit.FFprobeKit
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
+import dev.banderkat.podtitles.models.WebVttCue
 import dev.banderkat.podtitles.utils.Utils
 import org.json.JSONObject
 import org.vosk.Model
@@ -15,15 +19,13 @@ import org.vosk.Recognizer
 import org.vosk.android.StorageService
 import java.io.FileInputStream
 import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.*
 import kotlin.math.roundToInt
+
 
 const val AUDIO_FILE_PATH_PARAM = "input_audio_path"
 const val SUBTITLE_FILE_PATH_PARAM = "output_ttml_path"
 const val CHUNK_DURATION_PARAM = "chunk_duration_s"
 const val CHUNK_POSITION_PARAM = "chunk_position"
-const val WEBVTT_FILE_HEADER = "WEBVTT \n\n"
 
 /**
  * Transcribe a cached audio chunk with Vosk and convert the results to a TTML subtitle file.
@@ -33,24 +35,18 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
     Worker(appContext, workerParams) {
     companion object {
         const val TAG = "TranscribeWorker"
+        const val INTERMEDIATE_RESULTS_FILE_EXTENSION = ".json"
         const val FFMPEG_PARAMS = "-ac 1 -ar 16000 -f wav -y"
         const val SAMPLE_RATE = 16000.0f
         const val BUFFER_SIZE_SECONDS = 0.2f
         const val VOSK_MODEL_ASSET = "model-en-us" // TODO: support other language models
         const val VOSK_MODEL_NAME = "model"
 
-        // see WebVTT docs: https://developer.mozilla.org/en-US/docs/Web/API/WebVTT_API
-        const val SUBTITLE_FILE_EXTENSION = ".vtt"
-        const val WEBVTT_DURATION_FORMAT = "HH:mm:ss.SSS"
-        const val MS_PER_SEC = 1000
-
         // https://www.unimelb.edu.au/accessibility/video-captioning/style-guide
         const val MAX_CHARS_PER_CAPTION = 37 * 2
     }
 
-    // Using SDF to format durations, which is fine for values < 24 hrs
-    private val durationFormatter = SimpleDateFormat(WEBVTT_DURATION_FORMAT, Locale.getDefault())
-    private var subtitles = StringBuilder(WEBVTT_FILE_HEADER)
+    private val cues = mutableListOf<WebVttCue>()
     private var outputPipe: String? = null
     private val model = Model(
         StorageService.sync(
@@ -64,7 +60,7 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
         return try {
             val inputPath = inputData.getString(AUDIO_FILE_PATH_PARAM)
                 ?: error("Missing $TAG parameter $AUDIO_FILE_PATH_PARAM")
-            val chunkPosition = inputData.getLong(CHUNK_POSITION_PARAM, -1)
+            val chunkPosition = inputData.getInt(CHUNK_POSITION_PARAM, -1)
             if (chunkPosition < 0) error("Missing $TAG parameter $CHUNK_POSITION_PARAM")
 
             // get the playback length of this audio chunk in milliseconds
@@ -73,7 +69,7 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
                 .mediaInformation
                 .duration
 
-            Log.d(TAG, "Audio chunk $inputPath has duration of $duration s")
+            Log.d(TAG, "Audio chunk $inputPath has duration of $duration seconds")
             val durationSeconds = duration.toDouble()
 
             Log.d(TAG, "going to transcribe audio from $inputPath")
@@ -120,8 +116,8 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
             }
         } while (numberRead >= 0)
 
-        // output file path is the same as the input, but with the subtitle extension
-        val outputPath = Utils.getSubtitlePathForAudioCachePath(inputFilePath)
+        // output file path is the same as the input, but with a different extension
+        val outputPath = Utils.getIntermediateResultsPathForAudioCachePath(inputFilePath)
         handleFinalResult(recognizer.finalResult, outputPath)
         return outputPath
     }
@@ -158,22 +154,11 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
         var cueEnd: Double = firstWord.getDouble("end")
         val cueText = StringBuilder("${firstWord.getString("word")} ")
 
-        fun addCue() {
-            val now = TimeZone.getDefault().rawOffset.toLong()
-            val startDate = Date((cueStart * MS_PER_SEC).toLong() - now)
-            val endDate = Date((cueEnd * MS_PER_SEC).toLong() - now)
-            val startTiming = durationFormatter.format(startDate)
-            val endTiming = durationFormatter.format(endDate)
-            subtitles.appendLine("$startTiming --> $endTiming")
-            subtitles.appendLine(cueText.trimEnd())
-            subtitles.appendLine()
-        }
-
         for (i in 1 until resultJson.length()) {
             val wordObj = resultJson.getJSONObject(i)
             val word = wordObj.getString("word")
             if ((cueText.length + word.length) > MAX_CHARS_PER_CAPTION) {
-                addCue()
+                cues.add(WebVttCue(cueStart, cueEnd, cueText.trimEnd().toString()))
                 cueText.clear()
                 cueStart = wordObj.getDouble("start")
             }
@@ -182,18 +167,27 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
         }
 
         // write out last cue
-        addCue()
+        cues.add(WebVttCue(cueStart, cueEnd, cueText.trimEnd().toString()))
     }
 
     private fun handleFinalResult(hypothesis: String?, outputFilePath: String) {
         Log.d(TAG, "Vosk final result: $hypothesis")
 
+        val intermediateResults = getJsonResult()
+        Log.d(TAG, "Generated intermediate result JSON: $intermediateResults")
+
         // write subtitles to file
         applicationContext.openFileOutput(outputFilePath, Context.MODE_PRIVATE)
             .use { fileOutputStream ->
                 fileOutputStream.writer().use { writer ->
-                    writer.write(subtitles.toString())
+                    writer.write(intermediateResults)
                 }
             }
+    }
+
+    private fun getJsonResult(): String {
+        val cueListType = Types.newParameterizedType(List::class.java, WebVttCue::class.java)
+        val jsonAdapter: JsonAdapter<List<WebVttCue>> = Moshi.Builder().build().adapter(cueListType)
+        return jsonAdapter.toJson(cues)
     }
 }
