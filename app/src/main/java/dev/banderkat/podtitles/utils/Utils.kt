@@ -9,6 +9,7 @@ import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.workers.TranscribeWorker
 import dev.banderkat.podtitles.workers.TranscriptMergeWorker
 import java.io.File
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Assorted helper utilities
@@ -17,6 +18,27 @@ object Utils {
     private const val TAG = "Utils"
     private const val GLIDE_LOADER_STROKE_WIDTH = 5f
     private const val GLIDE_LOADER_CENTER_RADIUS = 30f
+    private const val TIME_MULTIPLIER = 60
+
+    fun getFormattedDuration(duration: String): String {
+        return try {
+            // first try to parse it as seconds (recommended in standard)
+            duration.toInt().seconds.toString()
+        } catch (ex: Exception) {
+            try {
+                // next try to parse it as a duration string
+                val parts = duration.split(":")
+                var seconds = parts.last().toInt()
+                if (parts.size > 1) seconds += parts[parts.size - 2].toInt() * TIME_MULTIPLIER
+                if (parts.size == 3) seconds += parts.first()
+                    .toInt() * TIME_MULTIPLIER * TIME_MULTIPLIER
+                seconds.seconds.toString()
+            } catch (ex: Exception) {
+                // use it as-is
+                duration
+            }
+        }
+    }
 
     fun getSubtitlePathForCachePath(cachePath: String): String {
         return "${File(cachePath).nameWithoutExtension}${TranscriptMergeWorker.SUBTITLE_FILE_EXTENSION}"
