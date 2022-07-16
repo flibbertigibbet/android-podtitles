@@ -1,6 +1,5 @@
 package dev.banderkat.podtitles.feeddetails
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -8,18 +7,34 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dev.banderkat.podtitles.databinding.EpisodeListItemBinding
 import dev.banderkat.podtitles.models.PodEpisode
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+import java.util.*
 
 class EpisodesAdapter(private val onClickListener: OnClickListener) :
     ListAdapter<PodEpisode, EpisodesAdapter.PodEpisodeViewHolder>(DiffCallback) {
 
+
     class PodEpisodeViewHolder(
         private val binding: EpisodeListItemBinding
     ) : RecyclerView.ViewHolder(binding.root) {
+        private val dateFormatter = DateFormat.getDateInstance(DateFormat.SHORT)
+        private val pubDateFormat = SimpleDateFormat(
+            "EEE, dd MMM yyyy HH:mm:ss Z",
+            Locale.getDefault()
+        )
 
         fun bind(episode: PodEpisode) {
+            val formattedPubDate = try {
+                dateFormatter.format(pubDateFormat.parse(episode.pubDate)!!)
+            } catch (ex: Exception) {
+                ""
+            }
             binding.apply {
                 episodeItemTitle.text = episode.title
-                episodeItemSubtitle.text = episode.category
+                episodeItemSubtitle.text = formattedPubDate
             }
         }
     }
