@@ -3,6 +3,7 @@ package dev.banderkat.podtitles.feeddetails
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.Html
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -114,7 +115,10 @@ class FeedDetailsFragment : Fragment() {
                 }
             }
             if (feed.description.isNotBlank()) {
-                feedCardDescription.text = feed.description
+                feedCardDescription.text = Html.fromHtml(
+                    feed.description,
+                    Html.FROM_HTML_MODE_LEGACY
+                )
                 feedCardDescription.visibility = View.VISIBLE
             }
             if (feed.copyright.isNotBlank()) {
