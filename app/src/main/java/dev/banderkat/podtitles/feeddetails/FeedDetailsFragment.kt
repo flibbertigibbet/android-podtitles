@@ -99,7 +99,7 @@ class FeedDetailsFragment : Fragment() {
 
             if (feed.language.isNotBlank()) {
                 val language = Locale.Builder()
-                    .setLanguage(feed.language)
+                    .setLanguageTag(feed.language)
                     .build()
                     .displayLanguage
                 feedCardLanguage.text = language
