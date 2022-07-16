@@ -82,6 +82,8 @@ class FeedDetailsFragment : Fragment() {
         viewModel.getEpisodes(feed.url).observe(viewLifecycleOwner) { episodes ->
             Log.d(FeedListFragment.TAG, "Found ${episodes.size} episodes")
             adapter.submitList(episodes)
+            binding.feedDetailsEpisodeListProgress.visibility = View.GONE
+            binding.feedDetailsEpisodeRv.visibility = View.VISIBLE
             adapter.notifyDataSetChanged()
         }
 
