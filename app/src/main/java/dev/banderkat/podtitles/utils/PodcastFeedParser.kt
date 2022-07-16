@@ -24,10 +24,10 @@ import java.io.InputStream
  */
 
 class PodcastFeedParser(
-    private val context: Context,
+    context: Context,
     private val okHttpClient: OkHttpClient,
     private val feedUrl: String,
-    private val displayOrder: Int
+    displayOrder: Int
 ) {
     companion object {
         const val TAG = "FeedParser"
@@ -60,15 +60,15 @@ class PodcastFeedParser(
 
         // optional
         "itunes:author" to "author",
-        "link" to "link", // required by RSS 2.0, but not by iTunes?
-        "itunes:new-feed-url" to "newUrl", // used for moved feeds TODO: use
+        "link" to null, // required by RSS 2.0, but not by iTunes?
+        "itunes:new-feed-url" to "newUrl", // used for moved feeds TODO: use? convert to https?f
         "copyright" to "copyright",
         "itunes:complete" to null, // Yes if no more episodes will be published to this feed
         "itunes:summary" to null, // use if description is missing
 
         // non-iTunes optional RSS fields
         // image, which contains a title, link (to site), and url (to the image)
-        "image" to null,
+        "image" to null, // convert to https
         "ttl" to null, // integer; number of minutes this feed may be cached
         "pubDate" to "pubDate" // last published date in RFC 822 format,
         // i.e., Sat, 07 Sep 2002 09:42:31 GMT
@@ -87,9 +87,9 @@ class PodcastFeedParser(
         "pubDate" to "pubDate",
         "description" to "description", // required by RSS 2.0, but optional in iTunes?
         "itunes:duration" to "duration", // "recommended" to be in seconds, but can be other formats
-        "link" to "link", // required by RSS 2.0, but optional in iTunes?
+        "link" to null, // required by RSS 2.0, but optional in iTunes?
         "category" to "category", // RSS 2.0 simple string
-        "itunes:image" to "image",
+        "itunes:image" to null, // convert to https
         "itunes:summary" to null, // use if description is missing
         "itunes:episode" to null, // integer, for serials; to be grouped by season
         "itunes:season" to null, // integer, for serials
@@ -116,22 +116,22 @@ class PodcastFeedParser(
 
     private fun parseFeed(rawXml: InputStream) {
         parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
-        val reader = rawXml.reader(Charsets.UTF_8)
-        parser.setInput(reader)
-        parser.nextTag()
-        parser.require(XmlPullParser.START_TAG, null, "rss")
+        rawXml.reader(Charsets.UTF_8).use {
+            parser.setInput(it)
+            parser.nextTag()
+            parser.require(XmlPullParser.START_TAG, null, "rss")
 
-        while (parser.next() != XmlPullParser.END_TAG) {
-            if (parser.eventType != XmlPullParser.START_TAG) continue
-            if (parser.name == "channel") {
-                val channel = readChannel()
-                database.podDao.addFeed(channel)
-                database.podDao.addEpisodes(episodes)
-            } else {
-                parseUtils.skip()
+            while (parser.next() != XmlPullParser.END_TAG) {
+                if (parser.eventType != XmlPullParser.START_TAG) continue
+                if (parser.name == "channel") {
+                    val channel = readChannel()
+                    database.podDao.addFeed(channel)
+                    database.podDao.addEpisodes(episodes)
+                } else {
+                    parseUtils.skip()
+                }
             }
         }
-        reader.close()
     }
 
     // Read the top-level channel info
@@ -152,11 +152,6 @@ class PodcastFeedParser(
             }
         }
 
-        Log.d(TAG, "read channel:")
-        channelMap.forEach { (key, value) ->
-            Log.d(TAG, "$key : $value")
-        }
-
         return PodFeed::class.createInstance(channelMap)
     }
 
@@ -174,6 +169,7 @@ class PodcastFeedParser(
                 channelMap["image"] = image.image
                 channelMap["imageTitle"] = image.title
             }
+            "link" -> channelMap["link"] = parseUtils.readUrl(parser.name)
             "itunes:image" -> {
                 val image = parseUtils.readItunesImage()
                 // only use itunes image tag if image tag not already found
@@ -213,33 +209,29 @@ class PodcastFeedParser(
             }
         }
 
-        Log.d(TAG, "read episode:")
-        itemMap.forEach { (key, value) ->
-            Log.d(TAG, "$key : $value")
-        }
-
         // if episode does not have a GUID, use its URL as the GUID
         if (!itemMap.containsKey("guid")) itemMap["guid"] = itemMap["url"].toString()
         episodes.add(PodEpisode::class.createInstance(itemMap))
-        Log.d(TAG, "Added episode. Now have ${episodes.size} episodes")
     }
 
     // handle fields that are not to be parsed as simple strings
     private fun specialItemProcessing() {
-        when (parser.name) {
+        when (val parserName = parser.name) {
             "enclosure" -> {
                 val enclosure = parseUtils.readEnclosure()
                 itemMap["url"] = enclosure.url
                 itemMap["mediaType"] = enclosure.type
                 itemMap["size"] = enclosure.size
             }
-            "itunes:episode" -> itemMap["episode"] = parseUtils.readInteger(parser.name)
-            "itunes:season" -> itemMap["season"] = parseUtils.readInteger(parser.name)
+            "link" -> itemMap["link"] = parseUtils.readUrl(parserName)
+            "itunes:image" -> itemMap["image"] = parseUtils.readUrl(parserName)
+            "itunes:episode" -> itemMap["episode"] = parseUtils.readInteger(parserName)
+            "itunes:season" -> itemMap["season"] = parseUtils.readInteger(parserName)
             "itunes:summary" -> {
-                if (itemMap.containsKey("description")) return
-                itemMap["description"] = parseUtils.readString(parser.name)
+                val summary = parseUtils.readString(parserName)
+                if (!itemMap.containsKey("description")) itemMap["description"] = summary
             }
-            else -> Log.w(TAG, "Do not know how to parse ${parser.name}")
+            else -> Log.w(TAG, "Do not know how to parse $parserName")
         }
     }
 }

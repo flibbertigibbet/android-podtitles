@@ -11,13 +11,11 @@ import kotlin.reflect.typeOf
  */
 fun <T : Any> KClass<T>.createInstance(values: Map<String, Any>): T {
     val tag = "DynamicInit"
-    Log.d(tag, "Going to dynamically construct an object of type ${this.simpleName}")
     val cons = this.primaryConstructor!!
     val valMap = cons.parameters
         .filter { values[it.name] != null }
         .associateBy({ it },
         { param ->
-            Log.d(tag, "Parameter ${param.name} receives ${values[param.name]}")
             val value = values[param.name]
             // cast the value to the expected parameter type
             when (param.type) {

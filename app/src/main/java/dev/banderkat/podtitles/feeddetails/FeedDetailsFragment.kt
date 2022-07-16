@@ -3,6 +3,7 @@ package dev.banderkat.podtitles.feeddetails
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.Html
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -59,7 +60,10 @@ class FeedDetailsFragment : Fragment() {
         val adapter = EpisodesAdapter(
             EpisodesAdapter.OnClickListener { episode ->
                 val action =
-                    FeedDetailsFragmentDirections.actionFeedDetailsFragmentToEpisodeFragment(episode)
+                    FeedDetailsFragmentDirections.actionFeedDetailsFragmentToEpisodeFragment(
+                        episode,
+                        feed
+                    )
                 findNavController().navigate(action)
             }
         )
@@ -89,14 +93,14 @@ class FeedDetailsFragment : Fragment() {
                 feedCardCategory.text = feed.category
                 feedCardCategory.visibility = View.VISIBLE
             }
-            if (feed.subCategory.isNotBlank()) {
+            if (feed.subCategory.isNotBlank() && feed.subCategory != feed.category) {
                 feedCardSubcategory.text = feed.subCategory
                 feedCardSubcategory.visibility = View.VISIBLE
             }
 
             if (feed.language.isNotBlank()) {
                 val language = Locale.Builder()
-                    .setLanguage(feed.language)
+                    .setLanguageTag(feed.language)
                     .build()
                     .displayLanguage
                 feedCardLanguage.text = language
@@ -106,13 +110,15 @@ class FeedDetailsFragment : Fragment() {
                 feedCardLink.visibility = View.VISIBLE
                 feedCardLink.setOnClickListener {
                     val webIntent = Intent(Intent.ACTION_VIEW)
-                    val httpsUrl = Uri.parse(Utils.convertToHttps(feed.link))
-                    webIntent.data = httpsUrl
+                    webIntent.data = Uri.parse(feed.link)
                     startActivity(webIntent)
                 }
             }
             if (feed.description.isNotBlank()) {
-                feedCardDescription.text = feed.description
+                feedCardDescription.text = Html.fromHtml(
+                    feed.description,
+                    Html.FROM_HTML_MODE_LEGACY
+                )
                 feedCardDescription.visibility = View.VISIBLE
             }
             if (feed.copyright.isNotBlank()) {
