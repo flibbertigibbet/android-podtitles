@@ -118,7 +118,7 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
 
         // output file path is the same as the input, but with a different extension
         val outputPath = Utils.getIntermediateResultsPathForAudioCachePath(inputFilePath)
-        handleFinalResult(recognizer.finalResult, outputPath)
+        handleFinalResult(outputPath)
         return outputPath
     }
 
@@ -170,17 +170,12 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
         cues.add(WebVttCue(cueStart, cueEnd, cueText.trimEnd().toString()))
     }
 
-    private fun handleFinalResult(hypothesis: String?, outputFilePath: String) {
-        Log.d(TAG, "Vosk final result: $hypothesis")
-
-        val intermediateResults = getJsonResult()
-        Log.d(TAG, "Generated intermediate result JSON: $intermediateResults")
-
-        // write subtitles to file
+    private fun handleFinalResult(outputFilePath: String) {
+        // write complete subtitles for this chunk to file
         applicationContext.openFileOutput(outputFilePath, Context.MODE_PRIVATE)
             .use { fileOutputStream ->
                 fileOutputStream.writer().use { writer ->
-                    writer.write(intermediateResults)
+                    writer.write(getJsonResult())
                 }
             }
     }

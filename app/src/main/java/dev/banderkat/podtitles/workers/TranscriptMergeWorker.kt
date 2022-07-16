@@ -12,7 +12,6 @@ import com.squareup.moshi.Types
 import dev.banderkat.podtitles.models.AudioCacheChunk
 import dev.banderkat.podtitles.models.WebVttCue
 import dev.banderkat.podtitles.utils.Utils
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
