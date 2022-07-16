@@ -6,6 +6,7 @@ import androidx.work.Data
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.google.common.collect.ImmutableMap
+import dev.banderkat.podtitles.models.AudioCacheChunk
 import java.io.File
 
 /**
@@ -20,14 +21,20 @@ class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters)
 
     override fun doWork(): Result {
         return try {
-            val inputPaths = inputData.getStringArray(SUBTITLE_FILE_PATH_PARAM)
+            val transcriptPaths = inputData.getStringArray(SUBTITLE_FILE_PATH_PARAM)
                 ?: error("Missing $TAG parameter $SUBTITLE_FILE_PATH_PARAM")
-            Log.d(TAG, "going to merge transcripts from $inputPaths")
-            for (path in inputPaths) {
-                Log.d(TAG, "Merge got path $path")
+            val chunkPositions = inputData.getLongArray(CHUNK_POSITION_PARAM)
+                ?: error("Missing $TAG parameter $CHUNK_POSITION_PARAM")
+            val chunkDurations = inputData.getDoubleArray(CHUNK_DURATION_PARAM)
+                ?: error("Missing $TAG parameter $CHUNK_DURATION_PARAM")
+
+            Log.d(TAG, "going to merge ${transcriptPaths.size} transcripts")
+
+            val chunks = chunkPositions.sorted().mapIndexed { index, position ->
+                AudioCacheChunk(position, transcriptPaths[index], chunkDurations[index])
             }
 
-            val outputPath = mergeTranscripts(inputPaths)
+            val outputPath = mergeTranscripts(chunks)
             Result.success(Data(ImmutableMap.of(SUBTITLE_FILE_PATH_PARAM, outputPath)))
         } catch (ex: Exception) {
             Log.e(TAG, "Transcription file merge failed", ex)
@@ -36,13 +43,19 @@ class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters)
     }
 
     /**
-     * Merges together the TTML subscript files from each of the cached audio chunks of a podcast.
+     * Merges together the subscript files from each of the cached audio chunks of a podcast.
      *
-     * @param transcripts Paths to the TTML files to merge
+     * @param transcripts Paths to the subscript files to merge
      * @return Path to the merged file
      */
-    private fun mergeTranscripts(transcripts: Array<String>): String {
+    private fun mergeTranscripts(transcripts: List<AudioCacheChunk>): String {
         if (transcripts.isEmpty()) error("Missing transcript files to merge")
+
+        transcripts.forEach { Log.d(TAG, "Got transcript $it") }
+
+        return applicationContext.getFileStreamPath(transcripts[0].filePath).absolutePath
+
+        /*
         if (transcripts.size == 1) return transcripts[0] // only one file; nothing to merge
 
         Log.d(TAG, "Got ${transcripts.size} transcripts to merge")
@@ -61,5 +74,6 @@ class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters)
             File(transcripts[i]).delete()
         }
         return applicationContext.getFileStreamPath(transcripts[0]).absolutePath
+         */
     }
 }

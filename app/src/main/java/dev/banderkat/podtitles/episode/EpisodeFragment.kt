@@ -1,6 +1,5 @@
 package dev.banderkat.podtitles.episode
 
-import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -20,6 +19,7 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.CacheSpan
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
@@ -27,19 +27,17 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.navigation.fragment.navArgs
 import androidx.work.*
 import com.google.common.collect.ImmutableList
-import com.sun.jna.StringArray
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.databinding.FragmentEpisodeBinding
+import dev.banderkat.podtitles.models.AudioCacheChunk
 import dev.banderkat.podtitles.models.PodEpisode
 import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
 import dev.banderkat.podtitles.player.PodTitlesDownloadService
 import dev.banderkat.podtitles.utils.Utils
-import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
-import dev.banderkat.podtitles.workers.SUBTITLE_FILE_PATH_PARAM
-import dev.banderkat.podtitles.workers.TranscribeWorker
-import dev.banderkat.podtitles.workers.TranscriptMergeWorker
+import dev.banderkat.podtitles.workers.*
 import java.io.File
+import java.util.*
 
 // TODO: remove test URI
 const val MEDIA_URI = "https://storage.googleapis.com/exoplayer-test-media-0/play.mp3"
@@ -154,11 +152,7 @@ class EpisodeFragment : Fragment() {
                     .setTrackTypeDisabled(TRACK_TYPE_DEFAULT, true) // otherwise sometimes doubled
                     .build()
 
-                val episodeCacheFiles = app.downloadCache.getCachedSpans(episode.url).map {
-                    it.file!!.absolutePath
-                }
-
-                transcribe(episodeCacheFiles)
+                transcribe(app.downloadCache.getCachedSpans(episode.url))
             }
     }
 
@@ -201,12 +195,15 @@ class EpisodeFragment : Fragment() {
         player = null
     }
 
-    private fun transcribe(inputFileCachePaths: List<String>) {
-        // launch transcription workers in parallel
-
+    private fun transcribe(cacheSpans: NavigableSet<CacheSpan>) {
+        val cachedChunks = cacheSpans.map {
+            AudioCacheChunk(
+                it.position, it.file!!.absolutePath, null
+            )
+        }
         // First check if this episode has already been transcribed
         val localSubtitlePath = Utils.getSubtitlePathForAudioCachePath(
-            inputFileCachePaths[0]
+            cachedChunks[0].filePath
         )
 
         val expectedSubtitlePath = requireContext()
@@ -221,9 +218,15 @@ class EpisodeFragment : Fragment() {
             return
         }
 
-        val workers = inputFileCachePaths.map {
+        // launch transcription workers in parallel
+        val workers = cachedChunks.map {
             OneTimeWorkRequestBuilder<TranscribeWorker>()
-                .setInputData(workDataOf(AUDIO_FILE_PATH_PARAM to it))
+                .setInputData(
+                    workDataOf(
+                        AUDIO_FILE_PATH_PARAM to it.filePath,
+                        CHUNK_POSITION_PARAM to it.position
+                    )
+                )
                 .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
                 .addTag("transcribe") // TODO: move
                 .build()
@@ -246,21 +249,15 @@ class EpisodeFragment : Fragment() {
                         val subtitlePath = workInfo.outputData.getString(
                             SUBTITLE_FILE_PATH_PARAM
                         )
-                        Log.d(
-                            "EpisodeFragment",
-                            "Transcription worker successfully wrote file $subtitlePath"
-                        )
+                        Log.d(TAG, "Transcription worker successfully wrote file $subtitlePath")
                         subtitleFilePath = subtitlePath
                         startPlayer()
                     }
                     WorkInfo.State.FAILED -> {
-                        Log.e("EpisodeFragment", "Transcription worker failed")
+                        Log.e(TAG, "Transcription worker failed")
                     }
                     else -> {
-                        Log.d(
-                            "EpisodeFragment",
-                            "Transcription worker moved to state ${workInfo?.state}"
-                        )
+                        Log.d(TAG, "Transcription worker moved to state ${workInfo?.state}")
                     }
                 }
             }

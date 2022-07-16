@@ -7,19 +7,22 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegKitConfig
-import com.google.common.collect.ImmutableMap
+import com.arthenica.ffmpegkit.FFprobeKit
 import dev.banderkat.podtitles.utils.Utils
 import org.json.JSONObject
 import org.vosk.Model
 import org.vosk.Recognizer
 import org.vosk.android.StorageService
-import java.io.*
+import java.io.FileInputStream
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
 
 const val AUDIO_FILE_PATH_PARAM = "input_audio_path"
 const val SUBTITLE_FILE_PATH_PARAM = "output_ttml_path"
+const val CHUNK_DURATION_PARAM = "chunk_duration_s"
+const val CHUNK_POSITION_PARAM = "chunk_position"
 const val WEBVTT_FILE_HEADER = "WEBVTT \n\n"
 
 /**
@@ -60,10 +63,31 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
     override fun doWork(): Result {
         return try {
             val inputPath = inputData.getString(AUDIO_FILE_PATH_PARAM)
-                ?: error("Missing TranscribeWorker parameter $AUDIO_FILE_PATH_PARAM")
+                ?: error("Missing $TAG parameter $AUDIO_FILE_PATH_PARAM")
+            val chunkPosition = inputData.getLong(CHUNK_POSITION_PARAM, -1)
+            if (chunkPosition < 0) error("Missing $TAG parameter $CHUNK_POSITION_PARAM")
+
+            // get the playback length of this audio chunk in milliseconds
+            val duration = FFprobeKit
+                .getMediaInformation(inputPath)
+                .mediaInformation
+                .duration
+
+            Log.d(TAG, "Audio chunk $inputPath has duration of $duration s")
+            val durationSeconds = duration.toDouble()
+
             Log.d(TAG, "going to transcribe audio from $inputPath")
             val outputPath = recognize(inputPath)
-            Result.success(Data(ImmutableMap.of(SUBTITLE_FILE_PATH_PARAM, outputPath)))
+
+            Result.success(
+                Data(
+                    mapOf(
+                        SUBTITLE_FILE_PATH_PARAM to outputPath,
+                        CHUNK_POSITION_PARAM to chunkPosition,
+                        CHUNK_DURATION_PARAM to durationSeconds
+                    )
+                )
+            )
         } catch (ex: Exception) {
             Log.e(TAG, "Vosk transcription failed", ex)
             Result.failure()
@@ -165,10 +189,11 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
         Log.d(TAG, "Vosk final result: $hypothesis")
 
         // write subtitles to file
-        applicationContext.openFileOutput(outputFilePath, Context.MODE_PRIVATE).use { fileOutputStream ->
-            fileOutputStream.writer().use { writer ->
-                writer.write(subtitles.toString())
+        applicationContext.openFileOutput(outputFilePath, Context.MODE_PRIVATE)
+            .use { fileOutputStream ->
+                fileOutputStream.writer().use { writer ->
+                    writer.write(subtitles.toString())
+                }
             }
-        }
     }
 }
