@@ -53,7 +53,11 @@ class SearchResultFragment : Fragment() {
             searchResultCardLink.text = searchResult.website
             searchResultCardDescription.text = searchResult.description
             searchResultImage.contentDescription = getString(R.string.default_logo_description)
-            Utils.loadLogo(searchResult.logoUrl, requireContext(), searchResultImage)
+
+            val logoUrl = searchResult.logoUrl
+            if (!logoUrl.isNullOrEmpty()) Utils.loadLogo(
+                Utils.convertToHttps(logoUrl), requireContext(), searchResultImage
+            )
 
             searchResultCardAddFeedFab.setOnClickListener {
                 if (podFeed != null) viewModel.removeFeed(podFeed!!) else addFeed(httpsFeedUri)
