@@ -33,6 +33,14 @@
                 android:value=".search.PodSearchActivity" />
         </activity>
 
+        <!-- Disable work manager initializer to customize it -->
+        <!-- If you want to disable android.startup completely. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            tools:node="remove">
+        </provider>
+
         <service
             android:name=".player.PodTitlesDownloadService"
             android:exported="false">

@@ -50,6 +50,7 @@ class AddFeed(
             .build()
 
         val workManager = WorkManager.getInstance(context)
+        workManager.pruneWork()
         workManager.enqueue(fetchPodRequest)
 
         workManager

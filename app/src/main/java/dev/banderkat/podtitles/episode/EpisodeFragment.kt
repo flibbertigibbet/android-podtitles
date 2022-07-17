@@ -4,6 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -26,10 +29,12 @@ import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.navigation.fragment.navArgs
 import androidx.work.*
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.google.common.collect.ImmutableList
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.databinding.FragmentEpisodeBinding
-import dev.banderkat.podtitles.models.AudioCacheChunk
 import dev.banderkat.podtitles.models.PodEpisode
 import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
@@ -45,6 +50,7 @@ const val MEDIA_URI = "https://storage.googleapis.com/exoplayer-test-media-0/pla
 class EpisodeFragment : Fragment() {
     companion object {
         const val TAG = "EpisodeFragment"
+        const val FRACTIONAL_TEXT_SIZE = 0.1f
     }
 
     private var _binding: FragmentEpisodeBinding? = null
@@ -59,9 +65,9 @@ class EpisodeFragment : Fragment() {
     private lateinit var feed: PodFeed
 
     private var player: ExoPlayer? = null
-    private var playWhenReady = true
     private var currentItem = 0
     private var playbackPosition = 0L
+    private var loadingProgressSteps = 2
 
     private var mediaItem: MediaItem? = null
     private var subtitleFilePath: String? = null
@@ -108,7 +114,46 @@ class EpisodeFragment : Fragment() {
         _binding = null
     }
 
+    private fun setDefaultArtwork() {
+        val defaultImage = if (episode.image.isNotBlank()) {
+            episode.image
+        } else if (feed.image.isNotBlank()) {
+            feed.image
+        } else {
+            ""
+        }
+
+        if (defaultImage.isNotBlank()) {
+            Log.d(TAG, "Going to load default artwork from $defaultImage")
+            Glide.with(this)
+                .asBitmap()
+                .load(defaultImage)
+                .into(object : CustomTarget<Bitmap>() {
+                    override fun onResourceReady(
+                        resource: Bitmap,
+                        transition: Transition<in Bitmap>?
+                    ) {
+                        binding.exoPlayer.defaultArtwork = BitmapDrawable(resources, resource)
+                        Log.d(TAG, "default artwork set")
+                        binding.exoPlayer.useArtwork = true
+                    }
+
+                    override fun onLoadCleared(placeholder: Drawable?) {}
+                })
+        } else {
+            Log.d(TAG, "No default artwork found for this episode/podcasts")
+        }
+    }
+
     private fun sendDownloadRequest() {
+
+        binding.exoPlayer.visibility = View.GONE
+        binding.episodeProgress.visibility = View.VISIBLE
+
+        // TODO: move magic numbers
+        loadingProgressSteps = 2
+        binding.episodeProgress.isIndeterminate = false
+        binding.episodeProgress.progress = 5
 
         val downloadRequest = DownloadRequest
             .Builder(episode.url, Uri.parse(episode.url)).build()
@@ -152,7 +197,10 @@ class EpisodeFragment : Fragment() {
                     .setTrackTypeDisabled(TRACK_TYPE_DEFAULT, true) // otherwise sometimes doubled
                     .build()
 
-                transcribe(app.downloadCache.getCachedSpans(episode.url))
+                val spans = app.downloadCache.getCachedSpans(episode.url)
+                loadingProgressSteps += spans.size
+                binding.episodeProgress.progress = (100 / loadingProgressSteps)
+                transcribe(spans)
             }
     }
 
@@ -166,7 +214,7 @@ class EpisodeFragment : Fragment() {
 
         val subtitle = MediaItem.SubtitleConfiguration.Builder(subtitleUri)
             .setMimeType(MimeTypes.TEXT_VTT)
-            .setLanguage("en")
+            .setLanguage(feed.language)
             .setSelectionFlags(SELECTION_FLAG_AUTOSELECT)
             .build()
 
@@ -176,20 +224,25 @@ class EpisodeFragment : Fragment() {
             .setSubtitleConfigurations(ImmutableList.of(subtitle))
             .build()
 
+        binding.episodeProgress.visibility = View.GONE
+        binding.exoPlayer.visibility = View.VISIBLE
+
         player?.apply {
             setMediaItem(subbedMedia)
             Log.d("MediaPlayer", "ready to play  >>>>>>>>>>>>")
-            playWhenReady = playWhenReady
             seekTo(currentItem, playbackPosition)
             prepare()
         }
+
+        setDefaultArtwork()
+        binding.exoPlayer.subtitleView?.setFractionalTextSize(FRACTIONAL_TEXT_SIZE)
+        player?.playWhenReady = true
     }
 
     private fun releasePlayer() {
         player?.let { exoPlayer ->
             playbackPosition = exoPlayer.currentPosition
             currentItem = exoPlayer.currentMediaItemIndex
-            playWhenReady = exoPlayer.playWhenReady
             exoPlayer.release()
         }
         player = null
@@ -197,14 +250,14 @@ class EpisodeFragment : Fragment() {
 
     private fun transcribe(cacheSpans: NavigableSet<CacheSpan>) {
         val cachedChunks = cacheSpans.mapIndexed { index, span ->
-            AudioCacheChunk(
-                index, span.file!!.absolutePath, null
-            )
+            Log.d(TAG,
+                "Cached span at index $index has file ${span.file?.name} position ${span.position} is cached? ${span.isCached} is hole? ${span.isHoleSpan} open-ended? ${span.isOpenEnded}")
+            span.file!!.absolutePath
         }
         // First check if this episode has already been transcribed
-        val localSubtitlePath = Utils.getSubtitlePathForCachePath(
-            cachedChunks[0].filePath
-        )
+        val localSubtitlePath = Utils.getSubtitlePathForCachePath(cachedChunks[0])
+
+        // TODO: also check to see if there is already a job to transcribe this episode
 
         val fileStreamPath = requireContext().getFileStreamPath(localSubtitlePath)
         if (fileStreamPath.exists()) {
@@ -214,28 +267,39 @@ class EpisodeFragment : Fragment() {
             return
         }
 
+        val workManager = WorkManager.getInstance(requireContext())
+
+        // cancel any other transcription jobs before attempting this one
+        workManager.cancelAllWorkByTag("transcribe")
+        workManager.cancelAllWorkByTag("transcript_merge")
+        workManager.pruneWork()
+
         // launch transcription workers in parallel
         val workers = cachedChunks.map {
             OneTimeWorkRequestBuilder<TranscribeWorker>()
-                .setInputData(
-                    workDataOf(
-                        AUDIO_FILE_PATH_PARAM to it.filePath,
-                        CHUNK_POSITION_PARAM to it.position
-                    )
-                )
+                .setInputData(workDataOf(AUDIO_FILE_PATH_PARAM to it))
                 .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
-                .addTag("transcribe") // TODO: move
+                .addTag("transcribe")
+                .addTag("transcribe_$localSubtitlePath") // TODO: move
                 .build()
         }
 
         val mergeFileWorker = OneTimeWorkRequestBuilder<TranscriptMergeWorker>()
             .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
             .setInputMerger(ArrayCreatingInputMerger::class)
-            .addTag("transcript_merge") // TODO: move
+            .addTag("transcript_merge")
+            .addTag("transcript_merge_$localSubtitlePath") // TODO: move
             .build()
 
-        val workManager = WorkManager.getInstance(requireContext())
         workManager.beginWith(workers).then(mergeFileWorker).enqueue()
+
+        workManager.getWorkInfosByTagLiveData("transcribe_$localSubtitlePath")
+            .observe(viewLifecycleOwner) { workInfo ->
+                val completed = workInfo.count {
+                    it.state == WorkInfo.State.SUCCEEDED
+                } + 1
+                binding.episodeProgress.progress = (100 / loadingProgressSteps) * completed
+            }
 
         workManager
             .getWorkInfoByIdLiveData(mergeFileWorker.id)
@@ -247,6 +311,7 @@ class EpisodeFragment : Fragment() {
                         )
                         Log.d(TAG, "Transcription worker successfully wrote file $subtitlePath")
                         subtitleFilePath = subtitlePath
+                        binding.episodeProgress.progress = 100
                         startPlayer()
                     }
                     WorkInfo.State.FAILED -> {
