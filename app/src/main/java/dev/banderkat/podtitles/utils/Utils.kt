@@ -49,11 +49,15 @@ object Utils {
     }
 
     fun convertToHttps(url: String): String {
-        return Uri.parse(url)
-            .buildUpon()
-            .scheme("https")
-            .build()
-            .toString()
+        return if (url.isNotBlank()) {
+            Uri.parse(url)
+                .buildUpon()
+                .scheme("https")
+                .build()
+                .toString()
+        } else {
+            ""
+        }
     }
 
     fun loadLogo(logoUrl: String?, context: Context, imageView: ImageView) {

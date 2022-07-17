@@ -59,6 +59,7 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
     override fun onCleared() {
         workManager.cancelAllWorkByTag(SEARCH_WORK_TAG)
         searchWorkers?.removeObserver(searchObserver)
+        workManager.pruneWork()
         super.onCleared()
     }
 

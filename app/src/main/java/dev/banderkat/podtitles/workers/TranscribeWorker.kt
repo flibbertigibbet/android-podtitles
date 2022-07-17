@@ -5,9 +5,7 @@ import android.util.Log
 import androidx.work.Data
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.arthenica.ffmpegkit.FFmpegKit
-import com.arthenica.ffmpegkit.FFmpegKitConfig
-import com.arthenica.ffmpegkit.FFprobeKit
+import com.arthenica.ffmpegkit.*
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
@@ -46,8 +44,10 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
         const val MAX_CHARS_PER_CAPTION = 37 * 2
     }
 
-    private val cues = mutableListOf<WebVttCue>()
     private var outputPipe: String? = null
+    private var ffmpegSession: Session? = null
+
+    private val cues = mutableListOf<WebVttCue>()
     private val model = Model(
         StorageService.sync(
             applicationContext,
@@ -71,8 +71,6 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
 
             Log.d(TAG, "Audio chunk $inputPath has duration of $duration seconds")
             val durationSeconds = duration.toDouble()
-
-            Log.d(TAG, "going to transcribe audio from $inputPath")
             val outputPath = recognize(inputPath)
 
             Result.success(
@@ -88,33 +86,39 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
             Log.e(TAG, "Vosk transcription failed", ex)
             Result.failure()
         } finally {
+            ffmpegSession?.cancel()
             if (!outputPipe.isNullOrEmpty()) {
                 FFmpegKitConfig.closeFFmpegPipe(outputPipe)
             }
+
+            ffmpegSession = null
+            outputPipe = null
         }
     }
 
     // based on:
     // https://github.com/alphacep/vosk-api/blob/master/android/lib/src/main/java/org/vosk/android/SpeechStreamService.java
     private fun recognize(inputFilePath: String): String {
-        val recognizer = Recognizer(model, SAMPLE_RATE)
-        recognizer.setWords(true) // include timestamps
+        Recognizer(model, SAMPLE_RATE).use { recognizer ->
+            recognizer.setWords(true) // include timestamps
 
-        // Vosk requires 16Hz mono PCM wav. Pipe input file through ffmpeg to convert it
-        pipeFFmpeg(inputFilePath)
+            // Vosk requires 16Hz mono PCM wav. Pipe input file through ffmpeg to convert it
+            pipeFFmpeg(inputFilePath)
 
-        val inputStream = FileInputStream(outputPipe)
-        val bufferSize = (SAMPLE_RATE * BUFFER_SIZE_SECONDS * 2).roundToInt()
-        val buffer = ByteArray(bufferSize)
+            FileInputStream(outputPipe).use { ffmpegStream ->
+                val bufferSize = (SAMPLE_RATE * BUFFER_SIZE_SECONDS * 2).roundToInt()
+                val buffer = ByteArray(bufferSize)
 
-        do {
-            val numberRead = inputStream.read(buffer, 0, bufferSize)
-            val isSilence = recognizer.acceptWaveForm(buffer, bufferSize)
-            // ignore partial results (when silence not found)
-            if (isSilence) {
-                handleResult(recognizer.result)
+                do {
+                    val numberRead = ffmpegStream.read(buffer, 0, bufferSize)
+                    val isSilence = recognizer.acceptWaveForm(buffer, bufferSize)
+                    // ignore partial results (when silence not found)
+                    if (isSilence) {
+                        handleResult(recognizer.result)
+                    }
+                } while (numberRead >= 0)
             }
-        } while (numberRead >= 0)
+        }
 
         // output file path is the same as the input, but with a different extension
         val outputPath = Utils.getIntermediateResultsPathForAudioCachePath(inputFilePath)
@@ -124,7 +128,7 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
 
     private fun pipeFFmpeg(inputFilePath: String) {
         outputPipe = FFmpegKitConfig.registerNewFFmpegPipe(applicationContext)
-        FFmpegKit.executeAsync(
+        ffmpegSession = FFmpegKit.executeAsync(
             "-i $inputFilePath $FFMPEG_PARAMS $outputPipe"
         ) {
             Log.d(
@@ -135,12 +139,13 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
             if (it.failStackTrace != null) {
                 Log.e(TAG, "ffmpeg failed: ${it.failStackTrace}")
                 throw IOException(it.failStackTrace)
+            } else if (!it.returnCode.isValueSuccess) {
+                error("ffmpeg did not return success. return code: ${it.returnCode}")
             }
         }
     }
 
     private fun handleResult(hypothesis: String?) {
-        Log.d(TAG, "Vosk result: $hypothesis")
         if (hypothesis.isNullOrEmpty()) return
 
         val json = JSONObject(hypothesis)
