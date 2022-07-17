@@ -6,8 +6,29 @@
     android:layout_height="match_parent"
     tools:context=".episode.EpisodeFragment">
 
+    <ProgressBar
+        android:id="@+id/episode_progress"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:indeterminate="false"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:progress="0"
+        android:layout_margin="16dp"
+        android:visibility="visible"
+        tools:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <androidx.media3.ui.PlayerView
         android:id="@+id/exo_player"
+        android:visibility="gone"
+        tools:visibility="visible"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>
