@@ -29,11 +29,13 @@ class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters)
         const val WEBVTT_FILE_HEADER = "WEBVTT \n\n"
         const val WEBVTT_DURATION_FORMAT = "HH:mm:ss.SSS"
         const val MS_PER_SEC = 1000
+
+        // to test cue styling: https://ronallo.com/demos/webvtt-cue-settings/
+        const val CUE_FORMAT = "line:8"
     }
 
     // Using SDF to format durations, which is fine for values < 24 hrs
     private val durationFormatter = SimpleDateFormat(WEBVTT_DURATION_FORMAT, Locale.getDefault())
-    private var subtitles = StringBuilder(WEBVTT_FILE_HEADER)
 
     private val cueListType = Types.newParameterizedType(List::class.java, WebVttCue::class.java)
     private val jsonAdapter: JsonAdapter<List<WebVttCue>> =
@@ -106,6 +108,6 @@ class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters)
         val endDate = Date((cue.end * MS_PER_SEC).toLong() - now + chunkOffset)
         val startTiming = durationFormatter.format(startDate)
         val endTiming = durationFormatter.format(endDate)
-        return "$startTiming --> $endTiming\n${cue.text}\n\n"
+        return "$startTiming --> $endTiming $CUE_FORMAT\n${cue.text}\n\n"
     }
 }
