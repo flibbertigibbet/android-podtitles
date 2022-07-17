@@ -259,6 +259,8 @@ class EpisodeFragment : Fragment() {
             cachedChunks[0].filePath
         )
 
+        // TODO: also check to see if there is already a job to transcribe this episode
+
         val fileStreamPath = requireContext().getFileStreamPath(localSubtitlePath)
         if (fileStreamPath.exists()) {
             Log.d(TAG, "Episode already transcribed; using existing subtitles")
@@ -274,9 +276,9 @@ class EpisodeFragment : Fragment() {
         workManager.cancelAllWorkByTag("transcript_merge")
         workManager.pruneWork()
 
-
         // launch transcription workers in parallel
         val workers = cachedChunks.map {
+            Log.d(TAG, "Creating transcribe worker for chunk $it")
             OneTimeWorkRequestBuilder<TranscribeWorker>()
                 .setInputData(
                     workDataOf(

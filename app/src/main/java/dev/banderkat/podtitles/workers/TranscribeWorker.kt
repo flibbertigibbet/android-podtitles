@@ -34,7 +34,7 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
     companion object {
         const val TAG = "TranscribeWorker"
         const val INTERMEDIATE_RESULTS_FILE_EXTENSION = ".json"
-        const val FFMPEG_PARAMS = "-ac 1 -ar 16000 -f wav -y"
+        const val FFMPEG_PARAMS = "-ac 1 -ar 16000 -f wav -y -hide_banner -loglevel error"
         const val SAMPLE_RATE = 16000.0f
         const val BUFFER_SIZE_SECONDS = 0.2f
         const val VOSK_MODEL_ASSET = "model-en-us" // TODO: support other language models
