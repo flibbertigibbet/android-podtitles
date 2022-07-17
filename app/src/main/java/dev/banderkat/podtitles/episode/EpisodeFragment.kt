@@ -35,7 +35,6 @@ import com.bumptech.glide.request.transition.Transition
 import com.google.common.collect.ImmutableList
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.databinding.FragmentEpisodeBinding
-import dev.banderkat.podtitles.models.AudioCacheChunk
 import dev.banderkat.podtitles.models.PodEpisode
 import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
@@ -51,6 +50,7 @@ const val MEDIA_URI = "https://storage.googleapis.com/exoplayer-test-media-0/pla
 class EpisodeFragment : Fragment() {
     companion object {
         const val TAG = "EpisodeFragment"
+        const val FRACTIONAL_TEXT_SIZE = 0.1f
     }
 
     private var _binding: FragmentEpisodeBinding? = null
@@ -232,11 +232,11 @@ class EpisodeFragment : Fragment() {
             Log.d("MediaPlayer", "ready to play  >>>>>>>>>>>>")
             seekTo(currentItem, playbackPosition)
             prepare()
-            playWhenReady = true
         }
 
         setDefaultArtwork()
-        binding.exoPlayer.subtitleView?.setBottomPaddingFraction(50f)
+        binding.exoPlayer.subtitleView?.setFractionalTextSize(FRACTIONAL_TEXT_SIZE)
+        player?.playWhenReady = true
     }
 
     private fun releasePlayer() {
@@ -250,14 +250,12 @@ class EpisodeFragment : Fragment() {
 
     private fun transcribe(cacheSpans: NavigableSet<CacheSpan>) {
         val cachedChunks = cacheSpans.mapIndexed { index, span ->
-            AudioCacheChunk(
-                index, span.file!!.absolutePath, null
-            )
+            Log.d(TAG,
+                "Cached span at index $index has file ${span.file?.name} position ${span.position} is cached? ${span.isCached} is hole? ${span.isHoleSpan} open-ended? ${span.isOpenEnded}")
+            span.file!!.absolutePath
         }
         // First check if this episode has already been transcribed
-        val localSubtitlePath = Utils.getSubtitlePathForCachePath(
-            cachedChunks[0].filePath
-        )
+        val localSubtitlePath = Utils.getSubtitlePathForCachePath(cachedChunks[0])
 
         // TODO: also check to see if there is already a job to transcribe this episode
 
@@ -278,14 +276,8 @@ class EpisodeFragment : Fragment() {
 
         // launch transcription workers in parallel
         val workers = cachedChunks.map {
-            Log.d(TAG, "Creating transcribe worker for chunk $it")
             OneTimeWorkRequestBuilder<TranscribeWorker>()
-                .setInputData(
-                    workDataOf(
-                        AUDIO_FILE_PATH_PARAM to it.filePath,
-                        CHUNK_POSITION_PARAM to it.position
-                    )
-                )
+                .setInputData(workDataOf(AUDIO_FILE_PATH_PARAM to it))
                 .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
                 .addTag("transcribe")
                 .addTag("transcribe_$localSubtitlePath") // TODO: move

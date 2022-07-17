@@ -23,16 +23,17 @@ class PodTitlesApplication : Application(), Configuration.Provider {
     companion object {
         const val httpCacheDir = "http_cache"
         const val cacheMaxSize = 50L * 1024L * 1024L // 50 MiB
+        const val maxThreads = 2
     }
 
-    // FIXME: ExoPlayer causing strict mode violations
+    // ExoPlayer causing strict mode violations
     // init { StrictMode.enableDefaults() }
 
     // Customize WorkManager initialization to limit concurrency
     override fun getWorkManagerConfiguration(): Configuration =
         Configuration.Builder()
             .setMinimumLoggingLevel(android.util.Log.WARN)
-            .setExecutor(Executors.newSingleThreadExecutor())
+            .setExecutor(Executors.newFixedThreadPool(maxThreads))
             .build()
 
     // Caching OkHttp client
