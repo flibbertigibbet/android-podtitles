@@ -71,6 +71,7 @@ class EpisodeFragment : Fragment() {
     private lateinit var feed: PodFeed
 
     private var player: ExoPlayer? = null
+    private var episodeDetailsExpanded = false
     private var currentItem = 0
     private var playbackPosition = 0L
     private var loadingProgressSteps = 2
@@ -113,32 +114,12 @@ class EpisodeFragment : Fragment() {
             episodeCardTitle.text = episode.title
             episodeCardPubDate.text = Utils.getFormattedDate(episode.pubDate)
             episodeCardDuration.text = Utils.getFormattedDuration(episode.duration)
-            episodeCardSize.text = Formatter.formatShortFileSize(requireContext(), episode.size.toLong())
-            episodeCardType.text = episode.episodeType
-            episodeCardCategory.text = episode.category
-            episodeCardSeasonEpisode.text = getString(
-                R.string.serial_season_episode,
-                episode.season,
-                episode.episode
-            )
-
-            if (episode.link.isNotBlank()) {
-                episodeCardLink.visibility = View.VISIBLE
-                episodeCardLink.setOnClickListener {
-                    val webIntent = Intent(Intent.ACTION_VIEW)
-                    webIntent.data = Uri.parse(episode.link)
-                    startActivity(webIntent)
-                }
-            }
-            if (episode.description.isNotBlank()) {
-                episodeCardDescription.text = Html.fromHtml(
-                    episode.description,
-                    Html.FROM_HTML_MODE_LEGACY
-                )
-                episodeCardDescription.visibility = View.VISIBLE
-            }
-
             Utils.loadLogo(getDefaultImage(), requireContext(), episodeCardImage)
+        }
+
+        binding.episodeCardDetailsExpandFab.setOnClickListener {
+            if (episodeDetailsExpanded) collapseCardDetails() else expandCardDetails()
+            episodeDetailsExpanded = !episodeDetailsExpanded
         }
     }
 
@@ -155,6 +136,66 @@ class EpisodeFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun expandCardDetails() {
+        binding.episodeCardDetailsExpandFab.apply {
+            setImageResource(android.R.drawable.arrow_up_float)
+            contentDescription = getString(R.string.card_details_collapse_fab_description)
+        }
+
+        binding.episodeDetailsCard.apply {
+            if (episode.size > 0) {
+                episodeCardSize.text = Formatter.formatShortFileSize(
+                    requireContext(),
+                    episode.size.toLong()
+                )
+            }
+            if (episode.episodeType.isNotBlank()) {
+                episodeCardType.text = episode.episodeType
+            }
+            if (episode.category.isNotBlank()) {
+                episodeCardCategory.text = episode.category
+            }
+            if (episode.season > 0 && episode.episode > 0) {
+                episodeCardSeasonEpisode.text = getString(
+                    R.string.serial_season_episode,
+                    episode.season,
+                    episode.episode
+                )
+            }
+            if (episode.link.isNotBlank()) {
+                episodeCardLink.visibility = View.VISIBLE
+                episodeCardLink.setOnClickListener {
+                    val webIntent = Intent(Intent.ACTION_VIEW)
+                    webIntent.data = Uri.parse(episode.link)
+                    startActivity(webIntent)
+                }
+            }
+            if (episode.description.isNotBlank()) {
+                episodeCardDescription.text = Html.fromHtml(
+                    episode.description,
+                    Html.FROM_HTML_MODE_LEGACY
+                )
+                episodeCardDescription.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    private fun collapseCardDetails() {
+        binding.episodeCardDetailsExpandFab.apply {
+            setImageResource(android.R.drawable.arrow_down_float)
+            contentDescription = getString(R.string.card_details_expand_fab_description)
+        }
+
+        binding.episodeDetailsCard.apply {
+            episodeCardSize.visibility = View.GONE
+            episodeCardType.visibility = View.GONE
+            episodeCardCategory.visibility = View.GONE
+            episodeCardSeasonEpisode.visibility = View.GONE
+            episodeCardLink.visibility = View.GONE
+            episodeCardDescription.visibility = View.GONE
+        }
     }
 
     private fun getDefaultImage(): String {
