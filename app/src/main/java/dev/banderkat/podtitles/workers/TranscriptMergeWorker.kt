@@ -88,6 +88,7 @@ class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters)
         val outputPath = Utils.getSubtitlePathForCachePath(transcripts[0].filePath)
 
         var chunkStartTime = 0.0
+        var chunkOffset = 0L
 
         // generate the WebVTT transcript file from the JSON intermediate result files
         applicationContext.openFileOutput(outputPath, Context.MODE_PRIVATE).writer()
@@ -97,10 +98,11 @@ class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters)
                     applicationContext.openFileInput(transcript.filePath).reader().use { reader ->
                         val cues = jsonAdapter.fromJson(reader.readText())
                         cues?.forEach { cue ->
-                            writer.append(getWebVttCueText(cue, chunkStartTime))
+                            writer.append(getWebVttCueText(cue, chunkOffset))
                         }
                     }
                     chunkStartTime += transcript.duration
+                    chunkOffset = (chunkStartTime * MS_PER_SEC).toLong()
                 }
             }
 
@@ -109,8 +111,7 @@ class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters)
         return applicationContext.getFileStreamPath(outputPath).absolutePath
     }
 
-    private fun getWebVttCueText(cue: WebVttCue, chunkStartTime: Double): String {
-        val chunkOffset = (chunkStartTime * MS_PER_SEC).toLong()
+    private fun getWebVttCueText(cue: WebVttCue, chunkOffset: Long): String {
         val now = TimeZone.getDefault().rawOffset.toLong()
         val startDate = Date((cue.start * MS_PER_SEC).toLong() - now + chunkOffset)
         val endDate = Date((cue.end * MS_PER_SEC).toLong() - now + chunkOffset)
