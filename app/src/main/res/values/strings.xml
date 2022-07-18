@@ -20,4 +20,5 @@
     <string name="card_details_collapse_fab_description">Collapse details</string>
     <string name="link_description">Website link</string>
     <string name="serial_season_episode">season: %s episode: %s</string>
+    <string name="download_episode_prompt">Download and transcribe episode</string>
 </resources>

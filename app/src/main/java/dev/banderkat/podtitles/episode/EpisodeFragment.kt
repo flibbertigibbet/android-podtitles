@@ -24,7 +24,6 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.cache.CacheDataSource
-import androidx.media3.datasource.cache.CacheSpan
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
@@ -36,15 +35,14 @@ import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.google.common.collect.ImmutableList
 import dev.banderkat.podtitles.PodTitlesApplication
+import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentEpisodeBinding
 import dev.banderkat.podtitles.models.PodEpisode
 import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
 import dev.banderkat.podtitles.player.PodTitlesDownloadService
-import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.utils.Utils
 import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
-import dev.banderkat.podtitles.workers.SUBTITLE_FILE_PATH_PARAM
 import dev.banderkat.podtitles.workers.TranscribeWorker
 import dev.banderkat.podtitles.workers.TranscriptMergeWorker
 import java.io.File
@@ -66,9 +64,14 @@ class EpisodeFragment : Fragment() {
         ViewModelProvider(this)[EpisodeViewModel::class.java]
     }
 
+    private val app: PodTitlesApplication by lazy {
+        requireActivity().application as PodTitlesApplication
+    }
+
     private val args: EpisodeFragmentArgs by navArgs()
     private lateinit var episode: PodEpisode
     private lateinit var feed: PodFeed
+    private lateinit var workManager: WorkManager
 
     private var player: ExoPlayer? = null
     private var episodeDetailsExpanded = false
@@ -82,7 +85,9 @@ class EpisodeFragment : Fragment() {
     private val downloadCompleteBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             Log.d("Home", "download complete broadcast received")
-            initializePlayer()
+
+            // FIXME: wrong context here to call this
+            transcribe()
         }
     }
 
@@ -102,13 +107,13 @@ class EpisodeFragment : Fragment() {
             IntentFilter(DOWNLOAD_FINISHED_ACTION)
         )
 
-        // FIXME
-        // sendDownloadRequest()
         return root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        workManager = WorkManager.getInstance(requireContext())
 
         binding.episodeDetailsCard.apply {
             episodeCardTitle.text = episode.title
@@ -121,6 +126,10 @@ class EpisodeFragment : Fragment() {
             if (episodeDetailsExpanded) collapseCardDetails() else expandCardDetails()
             episodeDetailsExpanded = !episodeDetailsExpanded
         }
+
+        checkEpisodeStatus()
+
+        binding.episodeDownloadButton.setOnClickListener { sendDownloadRequest() }
     }
 
     override fun onPause() {
@@ -210,9 +219,7 @@ class EpisodeFragment : Fragment() {
 
     private fun setDefaultArtwork() {
         val defaultImage = getDefaultImage()
-
         if (defaultImage.isNotBlank()) {
-            Log.d(TAG, "Going to load default artwork from $defaultImage")
             Glide.with(this)
                 .asBitmap()
                 .load(defaultImage)
@@ -222,19 +229,90 @@ class EpisodeFragment : Fragment() {
                         transition: Transition<in Bitmap>?
                     ) {
                         binding.exoPlayer.defaultArtwork = BitmapDrawable(resources, resource)
-                        Log.d(TAG, "default artwork set")
                         binding.exoPlayer.useArtwork = true
                     }
 
                     override fun onLoadCleared(placeholder: Drawable?) {}
                 })
-        } else {
-            Log.d(TAG, "No default artwork found for this episode/podcasts")
         }
     }
 
-    private fun sendDownloadRequest() {
+    private fun showDownloadTranscribeButton() {
+        binding.exoPlayer.visibility = View.GONE
+        binding.episodeProgress.visibility = View.GONE
+        binding.episodeDownloadButton.visibility = View.VISIBLE
+        subtitleFilePath = null
+    }
 
+    private fun showPlayer() {
+        Log.d(TAG, "Show player")
+        binding.episodeDownloadButton.visibility = View.GONE
+        binding.episodeProgress.visibility = View.GONE
+        binding.exoPlayer.visibility = View.VISIBLE
+        initializePlayer()
+    }
+
+    private fun showProgress() {
+        binding.exoPlayer.visibility = View.GONE
+        binding.episodeDownloadButton.visibility = View.GONE
+        binding.episodeProgress.visibility = View.VISIBLE
+
+        val spans = app.downloadCache.getCachedSpans(episode.url)
+        loadingProgressSteps += spans.size
+        binding.episodeProgress.progress = (100 / loadingProgressSteps)
+
+        setUpObservers()
+    }
+
+    private fun checkEpisodeStatus() {
+        val spans = app.downloadCache.getCachedSpans(episode.url)
+        val needsDownload = spans.isEmpty() || spans.find { !it.isCached } != null
+
+        if (needsDownload) {
+            Log.d(TAG, "episode needs download")
+            showDownloadTranscribeButton()
+            return
+        }
+
+        val cachedChunks = spans.mapIndexed { index, span ->
+            Log.d(
+                TAG,
+                "Cached span at index $index has file ${span.file?.name} position ${span.position} is cached? ${span.isCached} is hole? ${span.isHoleSpan} open-ended? ${span.isOpenEnded}"
+            )
+            span.file!!.absolutePath
+        }
+
+        // Check if this episode has already been transcribed
+        subtitleFilePath = getSubtitles(cachedChunks[0])
+        val needsTranscription = subtitleFilePath.isNullOrBlank()
+
+        if (!needsTranscription) {
+            Log.d(TAG, "episode already transcribed; show player")
+            showPlayer()
+            return
+        }
+
+        val isRunning = (
+                !workManager.getWorkInfosByTag(
+                    "transcribe_$subtitleFilePath"
+                ).isDone ||
+                        !workManager.getWorkInfosByTag(
+                            "transcript_merge_$subtitleFilePath"
+                        ).isDone
+                )
+
+        if (isRunning) {
+            Log.d(TAG, "Transcription job already in progress; show progress bar")
+            showProgress()
+        }
+
+        // needs transcription and it is not running already
+        Log.d(TAG, "episode needs transcription; show button")
+        showDownloadTranscribeButton()
+    }
+
+    private fun sendDownloadRequest() {
+        binding.episodeDownloadButton.visibility = View.GONE
         binding.exoPlayer.visibility = View.GONE
         binding.episodeProgress.visibility = View.VISIBLE
 
@@ -261,39 +339,16 @@ class EpisodeFragment : Fragment() {
             Log.w(TAG, "Not attached to an activity; not initializing player")
             return
         }
-        val app = requireActivity().application as PodTitlesApplication
         val cacheDataSourceFactory: DataSource.Factory = CacheDataSource.Factory()
             .setCache(app.downloadCache)
             .setUpstreamDataSourceFactory(app.dataSourceFactory)
             .setCacheWriteDataSinkFactory(null) // Disable writing.
 
-
-        ExoPlayer.Builder(requireContext())
-            .setMediaSourceFactory(
-                DefaultMediaSourceFactory(requireContext())
-                    .setDataSourceFactory(cacheDataSourceFactory)
-            )
-            .build()
-            .also { exoPlayer ->
-                binding.exoPlayer.player = exoPlayer
-                player = exoPlayer
-
-                exoPlayer.trackSelector?.parameters = TrackSelectionParameters
-                    .getDefaults(requireContext())
-                    .buildUpon()
-                    .setPreferredTextLanguage(feed.language) // will not display if language not set
-                    .setTrackTypeDisabled(TRACK_TYPE_DEFAULT, true) // otherwise sometimes doubled
-                    .build()
-
-                val spans = app.downloadCache.getCachedSpans(episode.url)
-                loadingProgressSteps += spans.size
-                binding.episodeProgress.progress = (100 / loadingProgressSteps)
-                transcribe(spans)
-            }
-    }
-
-    private fun startPlayer() {
-        if (mediaItem == null || player == null) return
+        // FIXME: set URL if already downloaded
+        if (mediaItem == null) {
+            Log.w(TAG, "Missing media item")
+            return
+        }
 
         val subtitleUri = Uri.fromFile(File(subtitleFilePath!!))
         Log.d("Player", "Got path to subtitles: $subtitleUri")
@@ -312,19 +367,31 @@ class EpisodeFragment : Fragment() {
             .setSubtitleConfigurations(ImmutableList.of(subtitle))
             .build()
 
-        binding.episodeProgress.visibility = View.GONE
-        binding.exoPlayer.visibility = View.VISIBLE
+        ExoPlayer.Builder(requireContext())
+            .setMediaSourceFactory(
+                DefaultMediaSourceFactory(requireContext())
+                    .setDataSourceFactory(cacheDataSourceFactory)
+            )
+            .build()
+            .also { exoPlayer ->
+                binding.exoPlayer.player = exoPlayer
+                player = exoPlayer
 
-        player?.apply {
-            setMediaItem(subbedMedia)
-            Log.d("MediaPlayer", "ready to play  >>>>>>>>>>>>")
-            seekTo(currentItem, playbackPosition)
-            prepare()
-        }
+                exoPlayer.trackSelector?.parameters = TrackSelectionParameters
+                    .getDefaults(requireContext())
+                    .buildUpon()
+                    .setPreferredTextLanguage(feed.language) // will not display if language not set
+                    .setTrackTypeDisabled(TRACK_TYPE_DEFAULT, true) // otherwise sometimes doubled
+                    .build()
+
+                exoPlayer.setMediaItem(subbedMedia)
+                Log.d("MediaPlayer", "ready to play  >>>>>>>>>>>>")
+                exoPlayer.seekTo(currentItem, playbackPosition)
+                exoPlayer.prepare()
+            }
 
         setDefaultArtwork()
         binding.exoPlayer.subtitleView?.setFractionalTextSize(FRACTIONAL_TEXT_SIZE)
-        player?.playWhenReady = true
     }
 
     private fun releasePlayer() {
@@ -336,28 +403,25 @@ class EpisodeFragment : Fragment() {
         player = null
     }
 
-    private fun transcribe(cacheSpans: NavigableSet<CacheSpan>) {
-        val cachedChunks = cacheSpans.mapIndexed { index, span ->
+    private fun getSubtitles(firstChunkPath: String): String? {
+        val localSubtitlePath = Utils.getSubtitlePathForCachePath(firstChunkPath)
+        val fileStreamPath = requireContext().getFileStreamPath(localSubtitlePath)
+        return if (fileStreamPath.exists()) {
+            fileStreamPath.absolutePath
+        } else {
+            null
+        }
+    }
+
+    private fun transcribe() {
+        val spans = app.downloadCache.getCachedSpans(episode.url)
+        val cachedChunks = spans.mapIndexed { index, span ->
             Log.d(
                 TAG,
                 "Cached span at index $index has file ${span.file?.name} position ${span.position} is cached? ${span.isCached} is hole? ${span.isHoleSpan} open-ended? ${span.isOpenEnded}"
             )
             span.file!!.absolutePath
         }
-        // First check if this episode has already been transcribed
-        val localSubtitlePath = Utils.getSubtitlePathForCachePath(cachedChunks[0])
-
-        // TODO: also check to see if there is already a job to transcribe this episode
-
-        val fileStreamPath = requireContext().getFileStreamPath(localSubtitlePath)
-        if (fileStreamPath.exists()) {
-            Log.d(TAG, "Episode already transcribed; using existing subtitles")
-            subtitleFilePath = fileStreamPath.absolutePath
-            startPlayer()
-            return
-        }
-
-        val workManager = WorkManager.getInstance(requireContext())
 
         // cancel any other transcription jobs before attempting this one
         workManager.cancelAllWorkByTag("transcribe")
@@ -370,7 +434,7 @@ class EpisodeFragment : Fragment() {
                 .setInputData(workDataOf(AUDIO_FILE_PATH_PARAM to it))
                 .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
                 .addTag("transcribe")
-                .addTag("transcribe_$localSubtitlePath") // TODO: move
+                .addTag("transcribe_$subtitleFilePath") // TODO: move
                 .build()
         }
 
@@ -378,12 +442,15 @@ class EpisodeFragment : Fragment() {
             .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
             .setInputMerger(ArrayCreatingInputMerger::class)
             .addTag("transcript_merge")
-            .addTag("transcript_merge_$localSubtitlePath") // TODO: move
+            .addTag("transcript_merge_$subtitleFilePath") // TODO: move
             .build()
 
         workManager.beginWith(workers).then(mergeFileWorker).enqueue()
+        setUpObservers()
+    }
 
-        workManager.getWorkInfosByTagLiveData("transcribe_$localSubtitlePath")
+    private fun setUpObservers() {
+        workManager.getWorkInfosByTagLiveData("transcribe_$subtitleFilePath")
             .observe(viewLifecycleOwner) { workInfo ->
                 val completed = workInfo.count {
                     it.state == WorkInfo.State.SUCCEEDED
@@ -392,25 +459,16 @@ class EpisodeFragment : Fragment() {
             }
 
         workManager
-            .getWorkInfoByIdLiveData(mergeFileWorker.id)
+            .getWorkInfosByTagLiveData("transcribe_$subtitleFilePath")
             .observe(viewLifecycleOwner) { workInfo ->
-                when (workInfo?.state) {
-                    WorkInfo.State.SUCCEEDED -> {
-                        val subtitlePath = workInfo.outputData.getString(
-                            SUBTITLE_FILE_PATH_PARAM
-                        )
-                        Log.d(TAG, "Transcription worker successfully wrote file $subtitlePath")
-                        subtitleFilePath = subtitlePath
-                        binding.episodeProgress.progress = 100
-                        startPlayer()
-                    }
-                    WorkInfo.State.FAILED -> {
-                        Log.e(TAG, "Transcription worker failed")
-                    }
-                    else -> {
-                        Log.d(TAG, "Transcription worker moved to state ${workInfo?.state}")
-                    }
+                val isFinished = workInfo.find { !it.state.isFinished } == null
+                if (isFinished) {
+                    binding.episodeProgress.progress = 100
+                    showPlayer()
+                    player?.playWhenReady = true
+                    workManager.pruneWork()
                 }
             }
     }
 }
+
