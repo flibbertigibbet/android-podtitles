@@ -25,7 +25,7 @@ data class PodEpisode constructor(
     @ColumnInfo(index = true)
     val guid: String, // should be same as URL if GUID not provided in feed
     @ColumnInfo(index = true)
-    var feedId: String, // ID of the parent PodFeed
+    val feedId: String, // ID of the parent PodFeed
     val url: String,
     val title: String,
     val mediaType: String,

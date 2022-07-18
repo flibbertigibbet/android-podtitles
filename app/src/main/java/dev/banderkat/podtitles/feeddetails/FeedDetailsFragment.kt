@@ -14,7 +14,6 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentFeedDetailsBinding
 import dev.banderkat.podtitles.feedlist.FeedListFragment
@@ -96,7 +95,7 @@ class FeedDetailsFragment : Fragment() {
     private fun expandCardDetails() {
         binding.feedCardDetailsExpandFab.apply {
             setImageResource(android.R.drawable.arrow_up_float)
-            contentDescription = getString(R.string.feed_card_details_collapse_fab_description)
+            contentDescription = getString(R.string.card_details_collapse_fab_description)
         }
 
         binding.feedDetailsCard.apply {
@@ -142,7 +141,7 @@ class FeedDetailsFragment : Fragment() {
     private fun collapseCardDetails() {
         binding.feedCardDetailsExpandFab.apply {
             setImageResource(android.R.drawable.arrow_down_float)
-            contentDescription = getString(R.string.feed_card_details_expand_fab_description)
+            contentDescription = getString(R.string.card_details_expand_fab_description)
         }
 
         binding.feedDetailsCard.apply {

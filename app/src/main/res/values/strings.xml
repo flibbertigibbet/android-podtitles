@@ -16,7 +16,8 @@
     <string name="feed_added_failure">Could not add feed.</string>
     <string name="default_logo_description">Podcast logo</string>
     <string name="episodes_list_label">Episodes</string>
-    <string name="feed_card_details_expand_fab_description">Expand details</string>
-    <string name="feed_card_details_collapse_fab_description">Collapse details</string>
-    <string name="feed_card_link_description">Website link</string>
+    <string name="card_details_expand_fab_description">Expand details</string>
+    <string name="card_details_collapse_fab_description">Collapse details</string>
+    <string name="link_description">Website link</string>
+    <string name="serial_season_episode">season: %s episode: %s</string>
 </resources>

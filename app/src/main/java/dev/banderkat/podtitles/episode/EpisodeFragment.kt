@@ -9,6 +9,8 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
+import android.text.Html
+import android.text.format.Formatter
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -39,8 +41,12 @@ import dev.banderkat.podtitles.models.PodEpisode
 import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
 import dev.banderkat.podtitles.player.PodTitlesDownloadService
+import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.utils.Utils
-import dev.banderkat.podtitles.workers.*
+import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
+import dev.banderkat.podtitles.workers.SUBTITLE_FILE_PATH_PARAM
+import dev.banderkat.podtitles.workers.TranscribeWorker
+import dev.banderkat.podtitles.workers.TranscriptMergeWorker
 import java.io.File
 import java.util.*
 
@@ -95,8 +101,45 @@ class EpisodeFragment : Fragment() {
             IntentFilter(DOWNLOAD_FINISHED_ACTION)
         )
 
-        sendDownloadRequest()
+        // FIXME
+        // sendDownloadRequest()
         return root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        binding.episodeDetailsCard.apply {
+            episodeCardTitle.text = episode.title
+            episodeCardPubDate.text = Utils.getFormattedDate(episode.pubDate)
+            episodeCardDuration.text = Utils.getFormattedDuration(episode.duration)
+            episodeCardSize.text = Formatter.formatShortFileSize(requireContext(), episode.size.toLong())
+            episodeCardType.text = episode.episodeType
+            episodeCardCategory.text = episode.category
+            episodeCardSeasonEpisode.text = getString(
+                R.string.serial_season_episode,
+                episode.season,
+                episode.episode
+            )
+
+            if (episode.link.isNotBlank()) {
+                episodeCardLink.visibility = View.VISIBLE
+                episodeCardLink.setOnClickListener {
+                    val webIntent = Intent(Intent.ACTION_VIEW)
+                    webIntent.data = Uri.parse(episode.link)
+                    startActivity(webIntent)
+                }
+            }
+            if (episode.description.isNotBlank()) {
+                episodeCardDescription.text = Html.fromHtml(
+                    episode.description,
+                    Html.FROM_HTML_MODE_LEGACY
+                )
+                episodeCardDescription.visibility = View.VISIBLE
+            }
+
+            Utils.loadLogo(getDefaultImage(), requireContext(), episodeCardImage)
+        }
     }
 
     override fun onPause() {
@@ -114,14 +157,18 @@ class EpisodeFragment : Fragment() {
         _binding = null
     }
 
-    private fun setDefaultArtwork() {
-        val defaultImage = if (episode.image.isNotBlank()) {
+    private fun getDefaultImage(): String {
+        return if (episode.image.isNotBlank()) {
             episode.image
         } else if (feed.image.isNotBlank()) {
             feed.image
         } else {
             ""
         }
+    }
+
+    private fun setDefaultArtwork() {
+        val defaultImage = getDefaultImage()
 
         if (defaultImage.isNotBlank()) {
             Log.d(TAG, "Going to load default artwork from $defaultImage")
@@ -250,8 +297,10 @@ class EpisodeFragment : Fragment() {
 
     private fun transcribe(cacheSpans: NavigableSet<CacheSpan>) {
         val cachedChunks = cacheSpans.mapIndexed { index, span ->
-            Log.d(TAG,
-                "Cached span at index $index has file ${span.file?.name} position ${span.position} is cached? ${span.isCached} is hole? ${span.isHoleSpan} open-ended? ${span.isOpenEnded}")
+            Log.d(
+                TAG,
+                "Cached span at index $index has file ${span.file?.name} position ${span.position} is cached? ${span.isCached} is hole? ${span.isHoleSpan} open-ended? ${span.isOpenEnded}"
+            )
             span.file!!.absolutePath
         }
         // First check if this episode has already been transcribed

@@ -1,7 +1,6 @@
 package dev.banderkat.podtitles
 
 import android.app.Application
-import android.os.StrictMode
 import androidx.media3.database.DatabaseProvider
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DataSource

@@ -5,19 +5,19 @@
     android:animateLayoutChanges="true"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:id="@+id/feed_card_view"
+    android:id="@+id/episode_card_view"
     android:layout_margin="16dp"
     app:cardCornerRadius="16dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:padding="4dp"
+        android:background="@color/cardview_dark_background"
         android:animateLayoutChanges="true"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/cardview_dark_background">
+        android:layout_height="wrap_content">
 
         <ImageView
-            android:id="@+id/feed_card_image"
+            android:id="@+id/episode_card_image"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_margin="16dp"
@@ -30,79 +30,104 @@
             android:contentDescription="@string/default_logo_description" />
 
         <TextView
-            android:id="@+id/feed_card_title"
+            android:id="@+id/episode_card_title"
             style="@style/TextAppearance.AppCompat.Title.Inverse"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/feed_card_image"
+            app:layout_constraintStart_toEndOf="@id/episode_card_image"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintWidth_percent="0.45"
-            tools:text="Here is where the title of the feed will go. Sometimes they are a bit long." />
+            tools:text="Here is where the title of the episode will go. Sometimes they are a bit long." />
 
         <TextView
-            android:id="@+id/feed_card_author"
+            android:id="@+id/episode_card_pub_date"
             style="@style/TextAppearance.AppCompat.Medium.Inverse"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
-            app:layout_constraintBottom_toTopOf="@id/feed_card_expanded_barrier"
+            app:layout_constraintBottom_toTopOf="@id/episode_card_expanded_barrier"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/feed_card_image"
-            tools:text="name of the author" />
+            app:layout_constraintTop_toBottomOf="@id/episode_card_image"
+            tools:text="4/01/2022" />
+
+        <TextView
+            android:id="@+id/episode_card_duration"
+            style="@style/TextAppearance.AppCompat.Medium.Inverse"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:layout_constraintBottom_toTopOf="@id/episode_card_expanded_barrier"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/episode_card_image"
+            tools:text="32 minutes" />
 
         <androidx.constraintlayout.widget.Barrier
-            android:id="@+id/feed_card_expanded_barrier"
-            app:layout_constraintTop_toBottomOf="@id/feed_card_author"
+            android:id="@+id/episode_card_expanded_barrier"
+            app:layout_constraintTop_toBottomOf="@id/episode_card_pub_date"
             app:layout_constraintStart_toStartOf="parent"
             app:barrierDirection="bottom"
-            app:constraint_referenced_ids="feed_card_author,feed_card_image"
+            app:constraint_referenced_ids="episode_card_pub_date,episode_card_duration,episode_card_image"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_width="match_parent"
             android:layout_height="1dp" />
 
         <TextView
-            android:id="@+id/feed_card_category"
+            android:id="@+id/episode_card_size"
             android:visibility="gone"
             tools:visibility="visible"
             style="@style/TextAppearance.AppCompat.Small.Inverse"
-            app:layout_constraintTop_toBottomOf="@id/feed_card_expanded_barrier"
+            app:layout_constraintTop_toBottomOf="@id/episode_card_expanded_barrier"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/feed_card_subcategory"
+            app:layout_constraintEnd_toStartOf="@id/episode_card_type"
             android:layout_margin="16dp"
-            tools:text="Category"
+            tools:text="30 MB"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
         <TextView
-            android:id="@+id/feed_card_subcategory"
+            android:id="@+id/episode_card_type"
             android:visibility="gone"
             tools:visibility="visible"
             style="@style/TextAppearance.AppCompat.Small.Inverse"
-            app:layout_constraintTop_toBottomOf="@id/feed_card_expanded_barrier"
-            app:layout_constraintStart_toEndOf="@id/feed_card_category"
+            app:layout_constraintTop_toBottomOf="@id/episode_card_expanded_barrier"
+            app:layout_constraintStart_toEndOf="@id/episode_card_size"
+            app:layout_constraintEnd_toStartOf="@id/episode_card_category"
+            android:layout_margin="16dp"
+            tools:text="trailer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/episode_card_category"
+            android:visibility="gone"
+            tools:visibility="visible"
+            style="@style/TextAppearance.AppCompat.Small.Inverse"
+            app:layout_constraintTop_toBottomOf="@id/episode_card_expanded_barrier"
+            app:layout_constraintStart_toEndOf="@id/episode_card_type"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_margin="16dp"
-            tools:text="Sub-category"
+            tools:text="category"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
         <TextView
-            android:id="@+id/feed_card_language"
+            android:id="@+id/episode_card_season_episode"
             android:visibility="gone"
             tools:visibility="visible"
             style="@style/TextAppearance.AppCompat.Small.Inverse"
-            app:layout_constraintTop_toBottomOf="@id/feed_card_category"
+            app:layout_constraintTop_toBottomOf="@id/episode_card_size"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/feed_card_link"
+            app:layout_constraintEnd_toStartOf="@id/episode_card_link"
+            app:layout_constraintBottom_toTopOf="@id/episode_card_description"
             android:layout_margin="16dp"
-            tools:text="English"
+            tools:text="season 1 episode 3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
         <androidx.appcompat.widget.AppCompatImageButton
-            android:id="@+id/feed_card_link"
+            android:id="@+id/episode_card_link"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
@@ -112,39 +137,25 @@
             android:minHeight="48dp"
             android:src="@drawable/ic_baseline_link_24"
             android:visibility="gone"
-            app:layout_constraintBottom_toTopOf="@id/feed_card_description"
+            app:layout_constraintBottom_toTopOf="@id/episode_card_description"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/feed_card_language"
-            app:layout_constraintTop_toBottomOf="@id/feed_card_category"
+            app:layout_constraintStart_toEndOf="@id/episode_card_season_episode"
+            app:layout_constraintTop_toBottomOf="@id/episode_card_size"
             tools:visibility="visible" />
 
         <TextView
-            android:id="@+id/feed_card_description"
+            android:id="@+id/episode_card_description"
             android:visibility="gone"
             tools:visibility="visible"
             style="@style/TextAppearance.AppCompat.Medium.Inverse"
-            app:layout_constraintTop_toBottomOf="@id/feed_card_language"
+            app:layout_constraintTop_toBottomOf="@id/episode_card_link"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
             android:layout_margin="16dp"
             android:padding="4dp"
             tools:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sagittis, eros et laoreet euismod, lacus libero tempus mauris, a cursus nunc urna et velit. Nunc eget nisl porttitor, aliquam eros vel, mollis tortor. Nulla cursus eu orci in volutpat. Vestibulum et ligula pellentesque, pharetra nunc sit amet, vulputate ex. In varius, dolor quis consectetur tincidunt, lacus urna pharetra purus, at venenatis libero sem vel arcu. Ut efficitur dui nec urna euismod malesuada."
             android:layout_width="0dp"
             android:layout_height="wrap_content" />
-
-        <TextView
-            android:id="@+id/feed_card_copyright"
-            style="@style/TextAppearance.AppCompat.Caption"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:padding="4dp"
-            android:textColor="#B0BEC5"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/feed_card_description"
-            tools:text="Copyright text"
-            tools:visibility="visible" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

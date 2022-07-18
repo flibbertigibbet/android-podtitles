@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    tools:context=".feeddetails.FeedDetailsFragment"
     android:animateLayoutChanges="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -47,7 +48,7 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="32dp"
             android:animateLayoutChanges="true"
-            android:contentDescription="@string/feed_card_details_expand_fab_description"
+            android:contentDescription="@string/card_details_expand_fab_description"
             android:src="@android:drawable/arrow_down_float"
             app:elevation="10dp"
             app:layout_constraintBottom_toBottomOf="@id/feed_card_holder"
