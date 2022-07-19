@@ -9,6 +9,9 @@ import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.workers.TranscribeWorker
 import dev.banderkat.podtitles.workers.TranscriptMergeWorker
 import java.io.File
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+import java.util.*
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -20,6 +23,23 @@ object Utils {
     private const val GLIDE_LOADER_CENTER_RADIUS = 30f
     private const val TIME_MULTIPLIER = 60
 
+    private val dateFormatter = DateFormat.getDateInstance(DateFormat.SHORT)
+    private val pubDateFormat = SimpleDateFormat(
+        "EEE, dd MMM yyyy HH:mm:ss Z",
+        Locale.getDefault()
+    )
+
+    fun getFormattedDate(dateStr: String): String {
+        return try {
+            dateFormatter.format(pubDateFormat.parse(dateStr)!!)
+        } catch (ex: Exception) {
+            dateStr
+        }
+    }
+
+    /**
+     * Parse episode durations, which may be in seconds, HH:mm:ss, or some other format.
+     */
     fun getFormattedDuration(duration: String): String {
         return try {
             // first try to parse it as seconds (recommended in standard)

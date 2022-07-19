@@ -1,7 +1,6 @@
 package dev.banderkat.podtitles
 
 import android.app.Application
-import android.os.StrictMode
 import androidx.media3.database.DatabaseProvider
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DataSource
@@ -23,7 +22,6 @@ class PodTitlesApplication : Application(), Configuration.Provider {
     companion object {
         const val httpCacheDir = "http_cache"
         const val cacheMaxSize = 50L * 1024L * 1024L // 50 MiB
-        const val maxThreads = 2
     }
 
     // ExoPlayer causing strict mode violations
@@ -33,7 +31,7 @@ class PodTitlesApplication : Application(), Configuration.Provider {
     override fun getWorkManagerConfiguration(): Configuration =
         Configuration.Builder()
             .setMinimumLoggingLevel(android.util.Log.WARN)
-            .setExecutor(Executors.newFixedThreadPool(maxThreads))
+            .setExecutor(Executors.newSingleThreadScheduledExecutor())
             .build()
 
     // Caching OkHttp client

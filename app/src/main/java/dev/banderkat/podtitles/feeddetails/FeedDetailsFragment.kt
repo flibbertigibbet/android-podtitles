@@ -71,7 +71,10 @@ class FeedDetailsFragment : Fragment() {
             }
         )
 
-        binding.feedDetailsEpisodeRv.adapter = adapter
+        // FIXME: losing scroll state on navigation back from an episode
+        // Wait to lay out adapter until items are ready, to preserve scroll state
+        // See: https://medium.com/androiddevelopers/restore-recyclerview-scroll-position-a8fbdc9a9334
+        adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
 
         val dividerDecoration = DividerItemDecoration(
             binding.feedDetailsEpisodeRv.context,
@@ -82,9 +85,9 @@ class FeedDetailsFragment : Fragment() {
         viewModel.getEpisodes(feed.url).observe(viewLifecycleOwner) { episodes ->
             Log.d(FeedListFragment.TAG, "Found ${episodes.size} episodes")
             adapter.submitList(episodes)
+            binding.feedDetailsEpisodeRv.adapter = adapter
             binding.feedDetailsEpisodeListProgress.visibility = View.GONE
             binding.feedDetailsEpisodeRv.visibility = View.VISIBLE
-            adapter.notifyDataSetChanged()
         }
 
         binding.feedCardDetailsExpandFab.setOnClickListener {
@@ -96,7 +99,7 @@ class FeedDetailsFragment : Fragment() {
     private fun expandCardDetails() {
         binding.feedCardDetailsExpandFab.apply {
             setImageResource(android.R.drawable.arrow_up_float)
-            contentDescription = getString(R.string.feed_card_details_collapse_fab_description)
+            contentDescription = getString(R.string.card_details_collapse_fab_description)
         }
 
         binding.feedDetailsCard.apply {
@@ -142,7 +145,7 @@ class FeedDetailsFragment : Fragment() {
     private fun collapseCardDetails() {
         binding.feedCardDetailsExpandFab.apply {
             setImageResource(android.R.drawable.arrow_down_float)
-            contentDescription = getString(R.string.feed_card_details_expand_fab_description)
+            contentDescription = getString(R.string.card_details_expand_fab_description)
         }
 
         binding.feedDetailsCard.apply {

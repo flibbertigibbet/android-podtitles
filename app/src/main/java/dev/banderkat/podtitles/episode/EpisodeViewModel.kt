@@ -1,17 +1,68 @@
 package dev.banderkat.podtitles.episode
 
 import android.app.Application
-import androidx.lifecycle.*
-import dev.banderkat.podtitles.database.getDatabase
-import dev.banderkat.podtitles.models.PodFeed
-import dev.banderkat.podtitles.search.SearchResultViewModel
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.work.*
+import dev.banderkat.podtitles.PodTitlesApplication
+import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
+import dev.banderkat.podtitles.workers.TranscribeWorker
+import dev.banderkat.podtitles.workers.TranscriptMergeWorker
+
+const val TRANSCRIBE_JOB_TAG = "transcribe"
+const val TRANSCRIPT_MERGE_JOB_TAG = "transcript_merge"
+const val TRANSCRIBE_JOB_CHAIN_TAG = "transcribe_chain"
 
 class EpisodeViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
         const val TAG = "EpisodeViewModel"
     }
 
-    private val database = getDatabase(application)
+    private val app: PodTitlesApplication = application as PodTitlesApplication
+    private val workManager = WorkManager.getInstance(application.applicationContext)
+
+    fun onDownloadCompleted(episodeUrl: String, subtitleFilePath: String) {
+        transcribe(episodeUrl, subtitleFilePath)
+    }
+
+    private fun transcribe(episodeUrl: String, subtitleFilePath: String) {
+        val spans = app.downloadCache.getCachedSpans(episodeUrl)
+        val cachedChunks = spans.mapIndexed { index, span ->
+            Log.d(
+                EpisodeFragment.TAG,
+                "Cached span at index $index has file ${span.file?.name} position ${span.position} is cached? ${span.isCached} is hole? ${span.isHoleSpan} open-ended? ${span.isOpenEnded}"
+            )
+            span.file!!.absolutePath
+        }
+
+        // create transcript workers for each downloaded audio chunk
+        val workers = cachedChunks.map {
+            OneTimeWorkRequestBuilder<TranscribeWorker>()
+                .setInputData(workDataOf(AUDIO_FILE_PATH_PARAM to it))
+                .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
+                .addTag(TRANSCRIBE_JOB_TAG)
+                .addTag("${TRANSCRIBE_JOB_TAG}_$subtitleFilePath")
+                .build()
+        }
+
+        val mergeFileWorker = OneTimeWorkRequestBuilder<TranscriptMergeWorker>()
+            .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
+            .setInputMerger(ArrayCreatingInputMerger::class)
+            .addTag(TRANSCRIPT_MERGE_JOB_TAG)
+            .addTag("${TRANSCRIPT_MERGE_JOB_TAG}_$subtitleFilePath")
+            .build()
+
+        // Use unique work to only run a single transcript job at a time, and queue the rest
+        workManager.beginUniqueWork(
+            TRANSCRIBE_JOB_CHAIN_TAG,
+            ExistingWorkPolicy.APPEND_OR_REPLACE, // if previous job failed, start a new one
+            workers
+        ).then(mergeFileWorker).enqueue()
+
+        Log.d(TAG, "Transcript work has been enqueued")
+    }
 
     class Factory(val app: Application) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

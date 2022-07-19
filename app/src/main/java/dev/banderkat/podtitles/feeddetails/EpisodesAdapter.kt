@@ -2,38 +2,28 @@ package dev.banderkat.podtitles.feeddetails
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.util.ObjectsCompat
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dev.banderkat.podtitles.databinding.EpisodeListItemBinding
 import dev.banderkat.podtitles.models.PodEpisode
 import dev.banderkat.podtitles.utils.Utils
-import java.text.DateFormat
-import java.text.SimpleDateFormat
-import java.util.*
 
 class EpisodesAdapter(private val onClickListener: OnClickListener) :
-    ListAdapter<PodEpisode, EpisodesAdapter.PodEpisodeViewHolder>(DiffCallback) {
-
+    ListAdapter<PodEpisode, EpisodesAdapter.PodEpisodeViewHolder>(
+        AsyncDifferConfig.Builder(DiffCallback).build()
+    ) {
 
     class PodEpisodeViewHolder(
         private val binding: EpisodeListItemBinding
     ) : RecyclerView.ViewHolder(binding.root) {
-        private val dateFormatter = DateFormat.getDateInstance(DateFormat.SHORT)
-        private val pubDateFormat = SimpleDateFormat(
-            "EEE, dd MMM yyyy HH:mm:ss Z",
-            Locale.getDefault()
-        )
 
         fun bind(episode: PodEpisode) {
-            val formattedPubDate = try {
-                dateFormatter.format(pubDateFormat.parse(episode.pubDate)!!)
-            } catch (ex: Exception) {
-                ""
-            }
             binding.apply {
                 episodeItemTitle.text = episode.title
-                episodeItemPubdate.text = formattedPubDate
+                episodeItemPubdate.text = Utils.getFormattedDate(episode.pubDate)
                 episodeItemDuration.text = Utils.getFormattedDuration(episode.duration)
             }
         }
@@ -44,16 +34,15 @@ class EpisodesAdapter(private val onClickListener: OnClickListener) :
             oldItem: PodEpisode,
             newItem: PodEpisode
         ): Boolean {
-            return oldItem === newItem
+            return oldItem.guid == newItem.guid
         }
 
         override fun areContentsTheSame(
             oldItem: PodEpisode,
             newItem: PodEpisode
         ): Boolean {
-            return oldItem.url == newItem.url
+            return ObjectsCompat.equals(oldItem, newItem)
         }
-
     }
 
     override fun onCreateViewHolder(
