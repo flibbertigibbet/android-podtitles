@@ -1,9 +1,9 @@
 package dev.banderkat.podtitles.feedlist
 
 import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.util.ObjectsCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -37,14 +37,14 @@ class FeedsAdapter(private val onClickListener: OnClickListener, private val con
             oldItem: PodFeed,
             newItem: PodFeed
         ): Boolean {
-            return oldItem === newItem
+            return oldItem.url == newItem.url
         }
 
         override fun areContentsTheSame(
             oldItem: PodFeed,
             newItem: PodFeed
         ): Boolean {
-            return oldItem.url == newItem.url
+            return ObjectsCompat.equals(oldItem, newItem)
         }
 
     }

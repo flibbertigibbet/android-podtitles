@@ -2,6 +2,8 @@ package dev.banderkat.podtitles.feeddetails
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.util.ObjectsCompat
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -10,7 +12,9 @@ import dev.banderkat.podtitles.models.PodEpisode
 import dev.banderkat.podtitles.utils.Utils
 
 class EpisodesAdapter(private val onClickListener: OnClickListener) :
-    ListAdapter<PodEpisode, EpisodesAdapter.PodEpisodeViewHolder>(DiffCallback) {
+    ListAdapter<PodEpisode, EpisodesAdapter.PodEpisodeViewHolder>(
+        AsyncDifferConfig.Builder(DiffCallback).build()
+    ) {
 
     class PodEpisodeViewHolder(
         private val binding: EpisodeListItemBinding
@@ -30,16 +34,15 @@ class EpisodesAdapter(private val onClickListener: OnClickListener) :
             oldItem: PodEpisode,
             newItem: PodEpisode
         ): Boolean {
-            return oldItem === newItem
+            return oldItem.guid == newItem.guid
         }
 
         override fun areContentsTheSame(
             oldItem: PodEpisode,
             newItem: PodEpisode
         ): Boolean {
-            return oldItem.url == newItem.url
+            return ObjectsCompat.equals(oldItem, newItem)
         }
-
     }
 
     override fun onCreateViewHolder(
