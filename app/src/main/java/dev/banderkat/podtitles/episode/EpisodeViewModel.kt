@@ -5,21 +5,21 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import androidx.work.*
 import dev.banderkat.podtitles.PodTitlesApplication
-import dev.banderkat.podtitles.database.getDatabase
 import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
 import dev.banderkat.podtitles.workers.TranscribeWorker
 import dev.banderkat.podtitles.workers.TranscriptMergeWorker
-import kotlinx.coroutines.launch
+
+const val TRANSCRIBE_JOB_TAG = "transcribe"
+const val TRANSCRIPT_MERGE_JOB_TAG = "transcript_merge"
+const val TRANSCRIBE_JOB_CHAIN_TAG = "transcribe_chain"
 
 class EpisodeViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
         const val TAG = "EpisodeViewModel"
     }
 
-    private val database = getDatabase(application)
     private val app: PodTitlesApplication = application as PodTitlesApplication
     private val workManager = WorkManager.getInstance(application.applicationContext)
 
@@ -37,33 +37,30 @@ class EpisodeViewModel(application: Application) : AndroidViewModel(application)
             span.file!!.absolutePath
         }
 
-        /*
-        // FIXME: how to prevent concurrent transcription jobs?
-        // cancel any other transcription jobs before attempting this one
-        workManager.cancelAllWorkByTag("transcribe").await()
-        workManager.cancelAllWorkByTag("transcript_merge").await()
-        workManager.pruneWork().await()
-        Log.d(TAG, "Any other transcription jobs have been cancelled")
-         */
-
-        // launch transcription workers in parallel
+        // create transcript workers for each downloaded audio chunk
         val workers = cachedChunks.map {
             OneTimeWorkRequestBuilder<TranscribeWorker>()
                 .setInputData(workDataOf(AUDIO_FILE_PATH_PARAM to it))
                 .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
-                .addTag("transcribe")
-                .addTag("transcribe_$subtitleFilePath") // TODO: move
+                .addTag(TRANSCRIBE_JOB_TAG)
+                .addTag("${TRANSCRIBE_JOB_TAG}_$subtitleFilePath")
                 .build()
         }
 
         val mergeFileWorker = OneTimeWorkRequestBuilder<TranscriptMergeWorker>()
             .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
             .setInputMerger(ArrayCreatingInputMerger::class)
-            .addTag("transcript_merge")
-            .addTag("transcript_merge_$subtitleFilePath") // TODO: move
+            .addTag(TRANSCRIPT_MERGE_JOB_TAG)
+            .addTag("${TRANSCRIPT_MERGE_JOB_TAG}_$subtitleFilePath")
             .build()
 
-        workManager.beginWith(workers).then(mergeFileWorker).enqueue()
+        // Use unique work to only run a single transcript job at a time, and queue the rest
+        workManager.beginUniqueWork(
+            TRANSCRIBE_JOB_CHAIN_TAG,
+            ExistingWorkPolicy.APPEND_OR_REPLACE, // if previous job failed, start a new one
+            workers
+        ).then(mergeFileWorker).enqueue()
+
         Log.d(TAG, "Transcript work has been enqueued")
     }
 

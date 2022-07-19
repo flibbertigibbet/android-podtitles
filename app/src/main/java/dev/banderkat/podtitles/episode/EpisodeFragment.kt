@@ -29,7 +29,8 @@ import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.navigation.fragment.navArgs
-import androidx.work.*
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
@@ -42,19 +43,14 @@ import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
 import dev.banderkat.podtitles.player.PodTitlesDownloadService
 import dev.banderkat.podtitles.utils.Utils
-import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
-import dev.banderkat.podtitles.workers.TranscribeWorker
-import dev.banderkat.podtitles.workers.TranscriptMergeWorker
 import java.io.File
-import java.util.*
-
-// TODO: remove test URI
-const val MEDIA_URI = "https://storage.googleapis.com/exoplayer-test-media-0/play.mp3"
 
 class EpisodeFragment : Fragment() {
     companion object {
         const val TAG = "EpisodeFragment"
         const val FRACTIONAL_TEXT_SIZE = 0.1f
+        const val INITIAL_PROGRESS_STEPS = 2 // one for download, one for the merge task
+        const val INITIAL_PROGRESS = 5
     }
 
     private var _binding: FragmentEpisodeBinding? = null
@@ -74,7 +70,7 @@ class EpisodeFragment : Fragment() {
     private var episodeDetailsExpanded = false
     private var currentItem = 0
     private var playbackPosition = 0L
-    private var loadingProgressSteps = 2
+    private var loadingProgressSteps = INITIAL_PROGRESS_STEPS
 
     private var mediaItem: MediaItem? = null
     private var subtitleFilePath: String? = null
@@ -252,7 +248,6 @@ class EpisodeFragment : Fragment() {
 
         if (subtitleFilePath.isNullOrBlank()) {
             Log.w(TAG, "Subtitle file not found. Not showing player")
-            workManager.pruneWork()
             showProgress()
             return
         }
@@ -276,15 +271,21 @@ class EpisodeFragment : Fragment() {
     }
 
     private fun handleDownloadComplete() {
-        workManager.pruneWork()
-        Log.d(TAG, "Download complete for URL ${episode.url}; go create subtitles at $subtitleFilePath")
+        try {
+            Log.d(
+                TAG,
+                "Download complete for URL ${episode.url}; go create subtitles at $subtitleFilePath"
+            )
 
-        subtitleFilePath = Utils.getSubtitlePathForCachePath(
-            app.downloadCache.getCachedSpans(episode.url).first().file!!.absolutePath
-        )
+            subtitleFilePath = Utils.getSubtitlePathForCachePath(
+                app.downloadCache.getCachedSpans(episode.url).first().file!!.absolutePath
+            )
 
-        viewModel.onDownloadCompleted(episode.url, subtitleFilePath!!)
-        setUpObservers()
+            viewModel.onDownloadCompleted(episode.url, subtitleFilePath!!)
+            setUpObservers()
+        } catch (ex: NoSuchElementException) {
+            Log.w(TAG, "Download completed, but view gone, so cannot start transcription")
+        }
     }
 
     private fun checkEpisodeStatus() {
@@ -311,11 +312,11 @@ class EpisodeFragment : Fragment() {
         subtitleFilePath = Utils.getSubtitlePathForCachePath(spans.first().file!!.absolutePath)
 
         val transcribeWorkInfos = workManager.getWorkInfosByTag(
-            "transcribe_$subtitleFilePath"
+            "${TRANSCRIBE_JOB_TAG}_$subtitleFilePath"
         )
 
         val mergeWorkInfos = workManager.getWorkInfosByTag(
-            "transcript_merge_$subtitleFilePath"
+            "${TRANSCRIPT_MERGE_JOB_TAG}_$subtitleFilePath"
         )
 
         val isRunning = !transcribeWorkInfos.isDone || !mergeWorkInfos.isDone
@@ -336,10 +337,9 @@ class EpisodeFragment : Fragment() {
         binding.exoPlayer.visibility = View.GONE
         binding.episodeProgress.visibility = View.VISIBLE
 
-        // TODO: move magic numbers
-        loadingProgressSteps = 2
+        loadingProgressSteps = INITIAL_PROGRESS_STEPS
         binding.episodeProgress.isIndeterminate = false
-        binding.episodeProgress.progress = 5
+        binding.episodeProgress.progress = INITIAL_PROGRESS
 
         val downloadRequest = DownloadRequest
             .Builder(episode.url, Uri.parse(episode.url)).build()
@@ -437,7 +437,7 @@ class EpisodeFragment : Fragment() {
             Log.w(TAG, "Not attached to an activity; not setting up observers")
             return
         }
-        workManager.getWorkInfosByTagLiveData("transcribe_$subtitleFilePath")
+        workManager.getWorkInfosByTagLiveData("${TRANSCRIBE_JOB_TAG}_$subtitleFilePath")
             .observe(viewLifecycleOwner) { workInfo ->
                 val completed = workInfo.count {
                     it.state == WorkInfo.State.SUCCEEDED
@@ -446,14 +446,16 @@ class EpisodeFragment : Fragment() {
             }
 
         workManager
-            .getWorkInfosByTagLiveData("transcribe_$subtitleFilePath")
+            .getWorkInfosByTagLiveData("${TRANSCRIPT_MERGE_JOB_TAG}_$subtitleFilePath")
             .observe(viewLifecycleOwner) { workInfo ->
-                val isFinished = workInfo.size > 0 && workInfo.find { !it.state.isFinished } == null
+                val isFinished = workInfo.find {
+                    it.state == WorkInfo.State.SUCCEEDED
+                } != null
+
                 if (isFinished) {
                     Log.d(TAG, "Transcription finished; going to show player")
                     showPlayer()
                     player?.playWhenReady = true
-                    workManager.pruneWork()
                 }
             }
     }

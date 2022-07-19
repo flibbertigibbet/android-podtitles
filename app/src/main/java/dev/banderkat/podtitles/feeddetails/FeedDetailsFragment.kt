@@ -14,6 +14,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentFeedDetailsBinding
 import dev.banderkat.podtitles.feedlist.FeedListFragment
@@ -70,7 +71,10 @@ class FeedDetailsFragment : Fragment() {
             }
         )
 
-        binding.feedDetailsEpisodeRv.adapter = adapter
+        // FIXME: losing scroll state on navigation back from an episode
+        // Wait to lay out adapter until items are ready, to preserve scroll state
+        // See: https://medium.com/androiddevelopers/restore-recyclerview-scroll-position-a8fbdc9a9334
+        adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
 
         val dividerDecoration = DividerItemDecoration(
             binding.feedDetailsEpisodeRv.context,
@@ -81,9 +85,9 @@ class FeedDetailsFragment : Fragment() {
         viewModel.getEpisodes(feed.url).observe(viewLifecycleOwner) { episodes ->
             Log.d(FeedListFragment.TAG, "Found ${episodes.size} episodes")
             adapter.submitList(episodes)
+            binding.feedDetailsEpisodeRv.adapter = adapter
             binding.feedDetailsEpisodeListProgress.visibility = View.GONE
             binding.feedDetailsEpisodeRv.visibility = View.VISIBLE
-            adapter.notifyDataSetChanged()
         }
 
         binding.feedCardDetailsExpandFab.setOnClickListener {

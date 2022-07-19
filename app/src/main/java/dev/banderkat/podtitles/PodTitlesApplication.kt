@@ -22,7 +22,6 @@ class PodTitlesApplication : Application(), Configuration.Provider {
     companion object {
         const val httpCacheDir = "http_cache"
         const val cacheMaxSize = 50L * 1024L * 1024L // 50 MiB
-        const val maxThreads = 2
     }
 
     // ExoPlayer causing strict mode violations
@@ -32,7 +31,7 @@ class PodTitlesApplication : Application(), Configuration.Provider {
     override fun getWorkManagerConfiguration(): Configuration =
         Configuration.Builder()
             .setMinimumLoggingLevel(android.util.Log.WARN)
-            .setExecutor(Executors.newFixedThreadPool(maxThreads))
+            .setExecutor(Executors.newSingleThreadScheduledExecutor())
             .build()
 
     // Caching OkHttp client
