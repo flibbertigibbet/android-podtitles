@@ -12,6 +12,7 @@
         android:layout_height="wrap_content"
         android:animateLayoutChanges="true"
         android:layout_margin="16dp"
+        android:paddingBottom="16dp"
         tools:context=".episode.EpisodeFragment">
 
         <include
@@ -66,7 +67,10 @@
         <androidx.media3.ui.PlayerView
             android:id="@+id/exo_player"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:layout_height="wrap_content"
+            android:minHeight="300dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"

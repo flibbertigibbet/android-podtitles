@@ -60,10 +60,6 @@ class EpisodeFragment : Fragment() {
     private var _binding: FragmentEpisodeBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: EpisodeViewModel by lazy {
-        ViewModelProvider(this)[EpisodeViewModel::class.java]
-    }
-
     private val app: PodTitlesApplication by lazy {
         requireActivity().application as PodTitlesApplication
     }
@@ -72,6 +68,7 @@ class EpisodeFragment : Fragment() {
     private lateinit var episode: PodEpisode
     private lateinit var feed: PodFeed
     private lateinit var workManager: WorkManager
+    private lateinit var viewModel: EpisodeViewModel
 
     private var player: ExoPlayer? = null
     private var episodeDetailsExpanded = false
@@ -85,9 +82,7 @@ class EpisodeFragment : Fragment() {
     private val downloadCompleteBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             Log.d("Home", "download complete broadcast received")
-
-            // FIXME: wrong context here to call this
-            transcribe()
+            handleDownloadComplete()
         }
     }
 
@@ -101,6 +96,8 @@ class EpisodeFragment : Fragment() {
 
         episode = args.episode
         feed = args.feed
+        viewModel = ViewModelProvider(this)[EpisodeViewModel::class.java]
+        workManager = WorkManager.getInstance(requireContext())
 
         requireActivity().registerReceiver(
             downloadCompleteBroadcast,
@@ -112,8 +109,6 @@ class EpisodeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        workManager = WorkManager.getInstance(requireContext())
 
         binding.episodeDetailsCard.apply {
             episodeCardTitle.text = episode.title
@@ -246,6 +241,22 @@ class EpisodeFragment : Fragment() {
 
     private fun showPlayer() {
         Log.d(TAG, "Show player")
+        if (binding.exoPlayer.visibility == View.VISIBLE) {
+            Log.w(TAG, "Already showing player; ignoring")
+            return
+        }
+
+        subtitleFilePath = getSubtitles(
+            app.downloadCache.getCachedSpans(episode.url).first().file!!.absolutePath
+        )
+
+        if (subtitleFilePath.isNullOrBlank()) {
+            Log.w(TAG, "Subtitle file not found. Not showing player")
+            workManager.pruneWork()
+            showProgress()
+            return
+        }
+
         binding.episodeDownloadButton.visibility = View.GONE
         binding.episodeProgress.visibility = View.GONE
         binding.exoPlayer.visibility = View.VISIBLE
@@ -264,6 +275,18 @@ class EpisodeFragment : Fragment() {
         setUpObservers()
     }
 
+    private fun handleDownloadComplete() {
+        workManager.pruneWork()
+        Log.d(TAG, "Download complete for URL ${episode.url}; go create subtitles at $subtitleFilePath")
+
+        subtitleFilePath = Utils.getSubtitlePathForCachePath(
+            app.downloadCache.getCachedSpans(episode.url).first().file!!.absolutePath
+        )
+
+        viewModel.onDownloadCompleted(episode.url, subtitleFilePath!!)
+        setUpObservers()
+    }
+
     private fun checkEpisodeStatus() {
         val spans = app.downloadCache.getCachedSpans(episode.url)
         val needsDownload = spans.isEmpty() || spans.find { !it.isCached } != null
@@ -274,36 +297,33 @@ class EpisodeFragment : Fragment() {
             return
         }
 
-        val cachedChunks = spans.mapIndexed { index, span ->
-            Log.d(
-                TAG,
-                "Cached span at index $index has file ${span.file?.name} position ${span.position} is cached? ${span.isCached} is hole? ${span.isHoleSpan} open-ended? ${span.isOpenEnded}"
-            )
-            span.file!!.absolutePath
-        }
-
         // Check if this episode has already been transcribed
-        subtitleFilePath = getSubtitles(cachedChunks[0])
+        subtitleFilePath = getSubtitles(spans.first().file!!.absolutePath)
         val needsTranscription = subtitleFilePath.isNullOrBlank()
 
         if (!needsTranscription) {
-            Log.d(TAG, "episode already transcribed; show player")
+            Log.d(TAG, "episode already transcribed to $subtitleFilePath; show player")
             showPlayer()
             return
         }
 
-        val isRunning = (
-                !workManager.getWorkInfosByTag(
-                    "transcribe_$subtitleFilePath"
-                ).isDone ||
-                        !workManager.getWorkInfosByTag(
-                            "transcript_merge_$subtitleFilePath"
-                        ).isDone
-                )
+        // check for workers tagged with expected subtitle file path
+        subtitleFilePath = Utils.getSubtitlePathForCachePath(spans.first().file!!.absolutePath)
+
+        val transcribeWorkInfos = workManager.getWorkInfosByTag(
+            "transcribe_$subtitleFilePath"
+        )
+
+        val mergeWorkInfos = workManager.getWorkInfosByTag(
+            "transcript_merge_$subtitleFilePath"
+        )
+
+        val isRunning = !transcribeWorkInfos.isDone || !mergeWorkInfos.isDone
 
         if (isRunning) {
             Log.d(TAG, "Transcription job already in progress; show progress bar")
             showProgress()
+            return
         }
 
         // needs transcription and it is not running already
@@ -344,16 +364,15 @@ class EpisodeFragment : Fragment() {
             .setUpstreamDataSourceFactory(app.dataSourceFactory)
             .setCacheWriteDataSinkFactory(null) // Disable writing.
 
-        // FIXME: set URL if already downloaded
-        if (mediaItem == null) {
-            Log.w(TAG, "Missing media item")
-            return
-        }
-
+        Log.d("Player", "Going to set subtitle URI from file path $subtitleFilePath")
         val subtitleUri = Uri.fromFile(File(subtitleFilePath!!))
         Log.d("Player", "Got path to subtitles: $subtitleUri")
-
         Log.d("Player", "Existing media item URI: ${mediaItem?.localConfiguration?.uri}")
+
+        // use URI from download if just completed, or parse it from the episode URL
+        val mediaUri = mediaItem?.localConfiguration?.uri ?: Uri.parse(episode.url)
+
+        Log.d("Player", "Using media URI $mediaUri")
 
         val subtitle = MediaItem.SubtitleConfiguration.Builder(subtitleUri)
             .setMimeType(MimeTypes.TEXT_VTT)
@@ -363,7 +382,7 @@ class EpisodeFragment : Fragment() {
 
         val subbedMedia = MediaItem
             .Builder()
-            .setUri(mediaItem?.localConfiguration?.uri)
+            .setUri(mediaUri)
             .setSubtitleConfigurations(ImmutableList.of(subtitle))
             .build()
 
@@ -413,43 +432,11 @@ class EpisodeFragment : Fragment() {
         }
     }
 
-    private fun transcribe() {
-        val spans = app.downloadCache.getCachedSpans(episode.url)
-        val cachedChunks = spans.mapIndexed { index, span ->
-            Log.d(
-                TAG,
-                "Cached span at index $index has file ${span.file?.name} position ${span.position} is cached? ${span.isCached} is hole? ${span.isHoleSpan} open-ended? ${span.isOpenEnded}"
-            )
-            span.file!!.absolutePath
-        }
-
-        // cancel any other transcription jobs before attempting this one
-        workManager.cancelAllWorkByTag("transcribe")
-        workManager.cancelAllWorkByTag("transcript_merge")
-        workManager.pruneWork()
-
-        // launch transcription workers in parallel
-        val workers = cachedChunks.map {
-            OneTimeWorkRequestBuilder<TranscribeWorker>()
-                .setInputData(workDataOf(AUDIO_FILE_PATH_PARAM to it))
-                .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
-                .addTag("transcribe")
-                .addTag("transcribe_$subtitleFilePath") // TODO: move
-                .build()
-        }
-
-        val mergeFileWorker = OneTimeWorkRequestBuilder<TranscriptMergeWorker>()
-            .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
-            .setInputMerger(ArrayCreatingInputMerger::class)
-            .addTag("transcript_merge")
-            .addTag("transcript_merge_$subtitleFilePath") // TODO: move
-            .build()
-
-        workManager.beginWith(workers).then(mergeFileWorker).enqueue()
-        setUpObservers()
-    }
-
     private fun setUpObservers() {
+        if (activity == null) {
+            Log.w(TAG, "Not attached to an activity; not setting up observers")
+            return
+        }
         workManager.getWorkInfosByTagLiveData("transcribe_$subtitleFilePath")
             .observe(viewLifecycleOwner) { workInfo ->
                 val completed = workInfo.count {
@@ -461,9 +448,9 @@ class EpisodeFragment : Fragment() {
         workManager
             .getWorkInfosByTagLiveData("transcribe_$subtitleFilePath")
             .observe(viewLifecycleOwner) { workInfo ->
-                val isFinished = workInfo.find { !it.state.isFinished } == null
+                val isFinished = workInfo.size > 0 && workInfo.find { !it.state.isFinished } == null
                 if (isFinished) {
-                    binding.episodeProgress.progress = 100
+                    Log.d(TAG, "Transcription finished; going to show player")
                     showPlayer()
                     player?.playWhenReady = true
                     workManager.pruneWork()
@@ -471,4 +458,3 @@ class EpisodeFragment : Fragment() {
             }
     }
 }
-
