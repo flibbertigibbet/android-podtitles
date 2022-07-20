@@ -10,16 +10,21 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import androidx.paging.LoadState
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentFeedDetailsBinding
-import dev.banderkat.podtitles.feedlist.FeedListFragment
 import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.utils.Utils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.*
 
 class FeedDetailsFragment : Fragment() {
@@ -74,20 +79,33 @@ class FeedDetailsFragment : Fragment() {
         // FIXME: losing scroll state on navigation back from an episode
         // Wait to lay out adapter until items are ready, to preserve scroll state
         // See: https://medium.com/androiddevelopers/restore-recyclerview-scroll-position-a8fbdc9a9334
-        adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
+        adapter.stateRestorationPolicy =
+            RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
 
         val dividerDecoration = DividerItemDecoration(
             binding.feedDetailsEpisodeRv.context,
-            LinearLayoutManager.VERTICAL)
+            LinearLayoutManager.VERTICAL
+        )
 
         binding.feedDetailsEpisodeRv.addItemDecoration(dividerDecoration)
+        binding.feedDetailsEpisodeRv.adapter = adapter
 
-        viewModel.getEpisodes(feed.url).observe(viewLifecycleOwner) { episodes ->
-            Log.d(FeedListFragment.TAG, "Found ${episodes.size} episodes")
-            adapter.submitList(episodes)
-            binding.feedDetailsEpisodeRv.adapter = adapter
-            binding.feedDetailsEpisodeListProgress.visibility = View.GONE
-            binding.feedDetailsEpisodeRv.visibility = View.VISIBLE
+        lifecycleScope.launch {
+            viewModel.getEpisodePages(feed.url).collectLatest {
+                adapter.submitData(it)
+            }
+        }
+
+        lifecycleScope.launch {
+            adapter.loadStateFlow.collectLatest { loadStates ->
+                if (loadStates.refresh is LoadState.Loading) {
+                    binding.feedDetailsEpisodeListProgress.visibility = View.VISIBLE
+                    binding.feedDetailsEpisodeRv.visibility = View.GONE
+                } else {
+                    binding.feedDetailsEpisodeListProgress.visibility = View.GONE
+                    binding.feedDetailsEpisodeRv.visibility = View.VISIBLE
+                }
+            }
         }
 
         binding.feedCardDetailsExpandFab.setOnClickListener {

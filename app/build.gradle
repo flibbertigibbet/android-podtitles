@@ -84,19 +84,22 @@ dependencies {
     def work_version = "2.7.1"
     implementation "androidx.work:work-runtime-ktx:$work_version"
 
+    // Paging
+    def paging_version = "3.1.1"
+    implementation "androidx.paging:paging-runtime-ktx:$paging_version"
+
     // Room
     def room_version = "2.5.0-alpha02"
+    implementation("androidx.room:room-ktx:$room_version")
+    implementation "androidx.room:room-runtime:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
+    implementation "androidx.room:room-paging:$room_version"
 
     // Kotlin reflection, for dynamic object construction from XML
     implementation "org.jetbrains.kotlin:kotlin-reflect:1.7.10"
 
     // for CircularDrawable
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
-
-    implementation("androidx.room:room-ktx:$room_version")
-    implementation "androidx.room:room-runtime:$room_version"
-    kapt "androidx.room:room-compiler:$room_version"
-    implementation "androidx.room:room-paging:$room_version"
 
     implementation "androidx.core:core-ktx:1.8.0"
     implementation "androidx.appcompat:appcompat:1.4.2"

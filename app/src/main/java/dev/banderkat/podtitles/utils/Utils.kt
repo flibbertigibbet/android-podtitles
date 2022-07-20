@@ -2,6 +2,7 @@ package dev.banderkat.podtitles.utils
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.widget.ImageView
 import androidx.swiperefreshlayout.widget.CircularProgressDrawable
 import com.bumptech.glide.Glide
@@ -11,6 +12,7 @@ import dev.banderkat.podtitles.workers.TranscriptMergeWorker
 import java.io.File
 import java.text.DateFormat
 import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
 
@@ -23,16 +25,38 @@ object Utils {
     private const val GLIDE_LOADER_CENTER_RADIUS = 30f
     private const val TIME_MULTIPLIER = 60
 
-    private val dateFormatter = DateFormat.getDateInstance(DateFormat.SHORT)
+    private val utcTimeZone = TimeZone.getTimeZone("UTC")
+    private val isoDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'").apply {
+        timeZone = utcTimeZone
+    }
+    private val dateFormatter = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault())
     private val pubDateFormat = SimpleDateFormat(
         "EEE, dd MMM yyyy HH:mm:ss Z",
         Locale.getDefault()
-    )
+    ).apply {
+        timeZone = utcTimeZone
+    }
 
+    /**
+     * Convert RFC 822 formatted podcast publication dates to ISO 8601, for DB sorting.
+     */
+    fun getIsoDate(dateStr: String): String {
+        return try {
+            isoDateFormat.format(pubDateFormat.parse(dateStr)!!)
+        } catch (ex: Exception) {
+            Log.e(TAG, "Failed to parse podcast date $dateStr", ex)
+            ""
+        }
+    }
+
+    /**
+     * Convert ISO 8601 dates from the DB to presentation format.
+     */
     fun getFormattedDate(dateStr: String): String {
         return try {
-            dateFormatter.format(pubDateFormat.parse(dateStr)!!)
+            dateFormatter.format(isoDateFormat.parse(dateStr)!!)
         } catch (ex: Exception) {
+            Log.e(TAG, "Failed to format date $dateStr for presentation", ex)
             dateStr
         }
     }
@@ -54,6 +78,7 @@ object Utils {
                     .toInt() * TIME_MULTIPLIER * TIME_MULTIPLIER
                 seconds.seconds.toString()
             } catch (ex: Exception) {
+                Log.w(TAG, "Failed to parse duration $duration", ex)
                 // use it as-is
                 duration
             }

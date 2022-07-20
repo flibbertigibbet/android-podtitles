@@ -15,6 +15,7 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
     companion object {
         const val TAG = "SearchViewModel"
         const val SEARCH_WORK_TAG = "podtitles_search"
+        const val SEARCH_UNIQUE_WORK_TAG = "podtitles_search_unique"
         const val SEARCH_DEBOUNCE_MS = 500L
     }
 
@@ -59,7 +60,6 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
     override fun onCleared() {
         workManager.cancelAllWorkByTag(SEARCH_WORK_TAG)
         searchWorkers?.removeObserver(searchObserver)
-        workManager.pruneWork()
         super.onCleared()
     }
 
@@ -88,7 +88,12 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
             .addTag(SEARCH_WORK_TAG)
             .build()
 
-        workManager.enqueue(searchRequest)
+        workManager
+            .beginUniqueWork(
+                SEARCH_UNIQUE_WORK_TAG,
+                ExistingWorkPolicy.REPLACE,
+                searchRequest
+            ).enqueue()
         val searchWorkers = workManager.getWorkInfoByIdLiveData(searchRequest.id)
         searchWorkers.observeForever(searchObserver)
     }
