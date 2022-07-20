@@ -104,10 +104,6 @@ class FeedDetailsFragment : Fragment() {
         binding.feedCardDetailsExpandFab.setOnClickListener {
             val action = FeedDetailsFragmentDirections
                 .actionFeedDetailsFragmentToFeedFullDetailsFragment(feed)
-            val transition = TransitionInflater.from(requireContext())
-                .inflateTransition(R.transition.expand_feed_details)
-            exitTransition = transition
-            reenterTransition = transition
             findNavController().navigate(action)
         }
     }
