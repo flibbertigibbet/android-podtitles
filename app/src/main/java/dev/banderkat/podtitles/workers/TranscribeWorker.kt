@@ -2,8 +2,8 @@ package dev.banderkat.podtitles.workers
 
 import android.content.Context
 import android.util.Log
+import androidx.work.CoroutineWorker
 import androidx.work.Data
-import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.arthenica.ffmpegkit.*
 import com.squareup.moshi.JsonAdapter
@@ -28,7 +28,7 @@ const val SUBTITLE_FILE_PATH_PARAM = "output_ttml_path"
  */
 @Suppress("TooGenericExceptionCaught")
 class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
-    Worker(appContext, workerParams) {
+    CoroutineWorker(appContext, workerParams) {
     companion object {
         const val TAG = "TranscribeWorker"
         const val INTERMEDIATE_RESULTS_FILE_EXTENSION = ".json"
@@ -54,7 +54,7 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
         )
     )
 
-    override fun doWork(): Result {
+    override suspend fun doWork(): Result {
         return try {
             val inputPath = inputData.getString(AUDIO_FILE_PATH_PARAM)
                 ?: error("Missing $TAG parameter $AUDIO_FILE_PATH_PARAM")
