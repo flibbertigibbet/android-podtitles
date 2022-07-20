@@ -10,13 +10,14 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import androidx.transition.TransitionInflater
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentFeedFullDetailsBinding
 import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.utils.Utils
 import java.util.*
 
-class FeedFullDetailsFragment: Fragment() {
+class FeedFullDetailsFragment : Fragment() {
     companion object {
         const val TAG = "FeedFullDetailsFragment"
     }
@@ -34,6 +35,11 @@ class FeedFullDetailsFragment: Fragment() {
     ): View {
         _binding = FragmentFeedFullDetailsBinding.inflate(inflater, container, false)
         feed = args.feed
+
+        val transition = TransitionInflater.from(requireContext())
+            .inflateTransition(R.transition.expand_feed_details)
+        enterTransition = transition
+
         return binding.root
     }
 

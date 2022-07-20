@@ -21,4 +21,6 @@
     <string name="link_description">Website link</string>
     <string name="serial_season_episode">season: %s episode: %s</string>
     <string name="download_episode_prompt">Download and transcribe episode</string>
+
+    <string name="feed_details_card_transition" translatable="false">details_card_transition</string>
 </resources>

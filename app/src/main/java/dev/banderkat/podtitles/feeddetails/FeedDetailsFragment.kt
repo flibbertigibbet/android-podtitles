@@ -1,32 +1,27 @@
 package dev.banderkat.podtitles.feeddetails
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.text.Html
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.transition.TransitionInflater
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentFeedDetailsBinding
 import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.utils.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.*
 
 class FeedDetailsFragment : Fragment() {
     companion object {
@@ -108,6 +103,9 @@ class FeedDetailsFragment : Fragment() {
         binding.feedCardDetailsExpandFab.setOnClickListener {
             val action = FeedDetailsFragmentDirections
                 .actionFeedDetailsFragmentToFeedFullDetailsFragment(feed)
+            val transition = TransitionInflater.from(requireContext())
+                .inflateTransition(R.transition.expand_feed_details)
+            reenterTransition = transition
             findNavController().navigate(action)
         }
     }
