@@ -3,7 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:animateLayoutChanges="true"
-    android:transitionName="@string/feed_details_card_transition"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:id="@+id/feed_card_view"
@@ -121,6 +120,7 @@
 
         <TextView
             android:id="@+id/feed_card_description"
+            android:autoLink="all"
             android:visibility="gone"
             tools:visibility="visible"
             style="@style/TextAppearance.AppCompat.Medium.Inverse"
