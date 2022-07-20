@@ -63,7 +63,6 @@ dependencies {
     implementation "com.arthenica:ffmpeg-kit-audio:4.5.1-1.LTS"
 
     // Vosk on-device transcription
-    // TODO: add { transitive = true } to these aar dependencies? can jna then be omitted?
     implementation "com.alphacephei:vosk-android:0.3.38@aar"
     implementation "net.java.dev.jna:jna:5.12.1@aar"
 
@@ -85,19 +84,22 @@ dependencies {
     def work_version = "2.7.1"
     implementation "androidx.work:work-runtime-ktx:$work_version"
 
+    // Paging
+    def paging_version = "3.1.1"
+    implementation "androidx.paging:paging-runtime-ktx:$paging_version"
+
     // Room
     def room_version = "2.5.0-alpha02"
+    implementation("androidx.room:room-ktx:$room_version")
+    implementation "androidx.room:room-runtime:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
+    implementation "androidx.room:room-paging:$room_version"
 
     // Kotlin reflection, for dynamic object construction from XML
     implementation "org.jetbrains.kotlin:kotlin-reflect:1.7.10"
 
     // for CircularDrawable
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
-
-    implementation("androidx.room:room-ktx:$room_version")
-    implementation "androidx.room:room-runtime:$room_version"
-    kapt "androidx.room:room-compiler:$room_version"
-    implementation "androidx.room:room-paging:$room_version"
 
     implementation "androidx.core:core-ktx:1.8.0"
     implementation "androidx.appcompat:appcompat:1.4.2"

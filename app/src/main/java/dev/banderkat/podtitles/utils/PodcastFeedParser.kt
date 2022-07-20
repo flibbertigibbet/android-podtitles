@@ -70,7 +70,7 @@ class PodcastFeedParser(
         // image, which contains a title, link (to site), and url (to the image)
         "image" to null, // convert to https
         "ttl" to null, // integer; number of minutes this feed may be cached
-        "pubDate" to "pubDate" // last published date in RFC 822 format,
+        "pubDate" to null // last published date in RFC 822 format,
         // i.e., Sat, 07 Sep 2002 09:42:31 GMT
     )
 
@@ -84,7 +84,7 @@ class PodcastFeedParser(
 
         // iTunes optional
         "guid" to "guid",
-        "pubDate" to "pubDate",
+        "pubDate" to null,
         "description" to "description", // required by RSS 2.0, but optional in iTunes?
         "itunes:duration" to "duration", // "recommended" to be in seconds, but can be other formats
         "link" to null, // required by RSS 2.0, but optional in iTunes?
@@ -156,7 +156,10 @@ class PodcastFeedParser(
     }
 
     private fun specialChannelProcessing() {
-        when (parser.name) {
+        when (val parserName = parser.name) {
+            "pubDate" -> {
+                channelMap["pubDate"] = Utils.getIsoDate(parseUtils.readString(parserName))
+            }
             "itunes:category" -> {
                 val category = parseUtils.readCategory()
                 if (!channelMap.containsKey("category")) channelMap["category"] = category.category
@@ -169,22 +172,22 @@ class PodcastFeedParser(
                 channelMap["image"] = image.image
                 channelMap["imageTitle"] = image.title
             }
-            "link" -> channelMap["link"] = parseUtils.readUrl(parser.name)
+            "link" -> channelMap["link"] = parseUtils.readUrl(parserName)
             "itunes:image" -> {
                 val image = parseUtils.readItunesImage()
                 // only use itunes image tag if image tag not already found
                 if (!channelMap.containsKey("image")) channelMap["image"] = image
             }
-            "ttl" -> channelMap["ttl"] = parseUtils.readInteger(parser.name)
+            "ttl" -> channelMap["ttl"] = parseUtils.readInteger(parserName)
             "itunes:summary" -> {
-                val summary = parseUtils.readString(parser.name)
+                val summary = parseUtils.readString(parserName)
                 if (!channelMap.containsKey("description")) channelMap["description"] = summary
             }
             "itunes:complete" -> {
-                val completeStr = parseUtils.readString(parser.name)
+                val completeStr = parseUtils.readString(parserName)
                 channelMap["complete"] = completeStr.lowercase() == "yes"
             }
-            else -> Log.w(TAG, "Do not know how to parse ${parser.name}")
+            else -> Log.w(TAG, "Do not know how to parse ${parserName}")
         }
     }
 
@@ -217,6 +220,9 @@ class PodcastFeedParser(
     // handle fields that are not to be parsed as simple strings
     private fun specialItemProcessing() {
         when (val parserName = parser.name) {
+            "pubDate" -> {
+                itemMap["pubDate"] = Utils.getIsoDate(parseUtils.readString(parserName))
+            }
             "enclosure" -> {
                 val enclosure = parseUtils.readEnclosure()
                 itemMap["url"] = enclosure.url

@@ -2,6 +2,7 @@ package dev.banderkat.podtitles.database
 
 import android.content.Context
 import androidx.lifecycle.LiveData
+import androidx.paging.PagingSource
 import androidx.room.*
 import dev.banderkat.podtitles.models.*
 import kotlinx.coroutines.InternalCoroutinesApi
@@ -19,6 +20,9 @@ interface PodDao {
 
     @Query("SELECT MAX(displayOrder) from $FEED_TABLE_NAME")
     fun getMaxFeedDisplayOrder(): LiveData<Int?>
+
+    @Query("SELECT guid, title, duration, pubDate FROM $EPISODE_TABLE_NAME WHERE feedId = :feedUrl ORDER BY pubDate DESC")
+    fun getEpisodePagesForFeed(feedUrl: String): PagingSource<Int, PodEpisodeItem>
 
     @Query("SELECT * FROM $EPISODE_TABLE_NAME WHERE feedId = :feedUrl")
     fun getEpisodesForFeed(feedUrl: String): LiveData<List<PodEpisode>>

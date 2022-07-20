@@ -120,6 +120,7 @@
 
         <TextView
             android:id="@+id/feed_card_description"
+            android:autoLink="all"
             android:visibility="gone"
             tools:visibility="visible"
             style="@style/TextAppearance.AppCompat.Medium.Inverse"

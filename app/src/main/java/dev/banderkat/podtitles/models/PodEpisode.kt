@@ -33,6 +33,7 @@ data class PodEpisode constructor(
     val link: String = "",
     val description: String = "",
     val duration: String = "",
+    @ColumnInfo(index = true)
     val pubDate: String = "",
     val image: String = "",
     val category: String = "",

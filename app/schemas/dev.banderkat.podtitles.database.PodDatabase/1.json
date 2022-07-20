@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "9525d3e235e34b4084ce62051d1fc918",
+    "identityHash": "f99ccb4125b596e0c91ca1436f5e9c0b",
     "entities": [
       {
         "tableName": "feed",
@@ -255,6 +255,15 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_episode_feedId` ON `${TABLE_NAME}` (`feedId`)"
+          },
+          {
+            "name": "index_episode_pubDate",
+            "unique": false,
+            "columnNames": [
+              "pubDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_episode_pubDate` ON `${TABLE_NAME}` (`pubDate`)"
           }
         ],
         "foreignKeys": [
@@ -341,7 +350,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9525d3e235e34b4084ce62051d1fc918')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f99ccb4125b596e0c91ca1436f5e9c0b')"
     ]
   }
 }

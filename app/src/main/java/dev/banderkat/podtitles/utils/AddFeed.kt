@@ -22,7 +22,8 @@ class AddFeed(
 ) {
     companion object {
         const val TAG = "AddFeed"
-        const val FETCH_WORK_TAG = "fetchPodcast"
+        const val FETCH_WORK_TAG = "fetch_podcast"
+        const val FETCH_UNIQUE_WORK_TAG = "fetch_podcast_unique"
     }
 
     private val database = getDatabase(context)
@@ -50,8 +51,12 @@ class AddFeed(
             .build()
 
         val workManager = WorkManager.getInstance(context)
-        workManager.pruneWork()
-        workManager.enqueue(fetchPodRequest)
+        workManager
+            .beginUniqueWork(
+                FETCH_UNIQUE_WORK_TAG,
+                ExistingWorkPolicy.APPEND_OR_REPLACE,
+                fetchPodRequest
+            ).enqueue()
 
         workManager
             .getWorkInfoByIdLiveData(fetchPodRequest.id)
