@@ -7,7 +7,6 @@ import androidx.work.WorkerParameters
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.database.getDatabase
 import dev.banderkat.podtitles.network.GpodderSearchNetwork
-import okhttp3.OkHttpClient
 
 const val PODCAST_QUERY_PARAM = "query"
 

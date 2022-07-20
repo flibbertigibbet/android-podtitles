@@ -2,8 +2,8 @@ package dev.banderkat.podtitles.workers
 
 import android.content.Context
 import android.util.Log
+import androidx.work.CoroutineWorker
 import androidx.work.Data
-import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.google.common.collect.ImmutableMap
 import com.squareup.moshi.JsonAdapter
@@ -19,7 +19,7 @@ import java.util.*
  */
 @Suppress("TooGenericExceptionCaught")
 class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters) :
-    Worker(appContext, workerParams) {
+    CoroutineWorker(appContext, workerParams) {
     companion object {
         const val TAG = "TranscriptMergeWorker"
 
@@ -28,7 +28,6 @@ class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters)
         const val WEBVTT_FILE_HEADER = "WEBVTT \n\n"
         const val WEBVTT_DURATION_FORMAT = "HH:mm:ss.SSS"
         const val MS_PER_SEC = 1000
-
         // to test cue styling: https://ronallo.com/demos/webvtt-cue-settings/
         const val CUE_FORMAT = "line:3"
     }
@@ -42,7 +41,7 @@ class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters)
 
     private data class AudioChunk(val position: Long, val filePath: String, val duration: Double)
 
-    override fun doWork(): Result {
+    override suspend fun doWork(): Result {
         return try {
             val transcriptPaths = inputData.getStringArray(SUBTITLE_FILE_PATH_PARAM)
                 ?: error("Missing $TAG parameter $SUBTITLE_FILE_PATH_PARAM")

@@ -10,6 +10,7 @@ import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
 import dev.banderkat.podtitles.workers.TranscribeWorker
 import dev.banderkat.podtitles.workers.TranscriptMergeWorker
+import java.util.concurrent.TimeUnit
 
 const val TRANSCRIBE_JOB_TAG = "transcribe"
 const val TRANSCRIPT_MERGE_JOB_TAG = "transcript_merge"
@@ -18,6 +19,7 @@ const val TRANSCRIBE_JOB_CHAIN_TAG = "transcribe_chain"
 class EpisodeViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
         const val TAG = "EpisodeViewModel"
+        const val BACKOFF_DELAY_MINUTES = 5L
     }
 
     private val app: PodTitlesApplication = application as PodTitlesApplication
@@ -42,6 +44,11 @@ class EpisodeViewModel(application: Application) : AndroidViewModel(application)
             OneTimeWorkRequestBuilder<TranscribeWorker>()
                 .setInputData(workDataOf(AUDIO_FILE_PATH_PARAM to it))
                 .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
+                .setBackoffCriteria(
+                    BackoffPolicy.EXPONENTIAL,
+                    BACKOFF_DELAY_MINUTES, // backoff delay default is 10 seconds
+                    TimeUnit.MINUTES
+                )
                 .addTag(TRANSCRIBE_JOB_TAG)
                 .addTag("${TRANSCRIBE_JOB_TAG}_$subtitleFilePath")
                 .build()
