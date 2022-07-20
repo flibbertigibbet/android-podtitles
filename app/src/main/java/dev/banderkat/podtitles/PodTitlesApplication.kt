@@ -9,16 +9,14 @@ import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.NoOpCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.offline.DownloadManager
-import androidx.work.Configuration
 import dev.banderkat.podtitles.player.DOWNLOAD_CONTENT_DIRECTORY
 import okhttp3.OkHttpClient
 import java.io.File
 import java.net.CookieHandler
 import java.net.CookieManager
 import java.net.CookiePolicy
-import java.util.concurrent.Executors
 
-class PodTitlesApplication : Application(), Configuration.Provider {
+class PodTitlesApplication : Application() {
     companion object {
         const val httpCacheDir = "http_cache"
         const val cacheMaxSize = 50L * 1024L * 1024L // 50 MiB
@@ -26,13 +24,6 @@ class PodTitlesApplication : Application(), Configuration.Provider {
 
     // ExoPlayer causing strict mode violations
     // init { StrictMode.enableDefaults() }
-
-    // Customize WorkManager initialization to limit concurrency
-    override fun getWorkManagerConfiguration(): Configuration =
-        Configuration.Builder()
-            .setMinimumLoggingLevel(android.util.Log.WARN)
-            .setExecutor(Executors.newSingleThreadScheduledExecutor())
-            .build()
 
     // Caching OkHttp client
     val okHttpClient: OkHttpClient by lazy {
