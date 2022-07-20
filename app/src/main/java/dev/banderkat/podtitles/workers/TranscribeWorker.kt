@@ -5,12 +5,18 @@ import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.WorkerParameters
-import com.arthenica.ffmpegkit.*
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFmpegKitConfig
+import com.arthenica.ffmpegkit.FFprobeKit
+import com.arthenica.ffmpegkit.Session
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import dev.banderkat.podtitles.models.WebVttCue
 import dev.banderkat.podtitles.utils.Utils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.vosk.Model
 import org.vosk.Recognizer
@@ -31,6 +37,7 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
     CoroutineWorker(appContext, workerParams) {
     companion object {
         const val TAG = "TranscribeWorker"
+        const val PARALLELISM = 2
         const val INTERMEDIATE_RESULTS_FILE_EXTENSION = ".json"
         const val FFMPEG_PARAMS = "-ac 1 -ar 16000 -f wav -y -hide_banner -loglevel error"
         const val SAMPLE_RATE = 16000.0f
@@ -54,34 +61,37 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
         )
     )
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun doWork(): Result {
-        return try {
-            val inputPath = inputData.getString(AUDIO_FILE_PATH_PARAM)
-                ?: error("Missing $TAG parameter $AUDIO_FILE_PATH_PARAM")
+        return withContext(Dispatchers.Default.limitedParallelism(PARALLELISM)) {
+            try {
+                val inputPath = inputData.getString(AUDIO_FILE_PATH_PARAM)
+                    ?: error("Missing $TAG parameter $AUDIO_FILE_PATH_PARAM")
 
-            // get the playback length of this audio chunk in milliseconds
-            val duration = FFprobeKit
-                .getMediaInformation(inputPath)
-                .mediaInformation
-                .duration
+                // get the playback length of this audio chunk in milliseconds
+                val duration = FFprobeKit
+                    .getMediaInformation(inputPath)
+                    .mediaInformation
+                    .duration
 
-            Log.d(TAG, "Audio chunk $inputPath has duration of $duration seconds")
-            val outputPath = recognize(inputPath)
+                Log.d(TAG, "Audio chunk $inputPath has duration of $duration seconds")
+                val outputPath = recognize(inputPath)
 
-            Result.success(
-                Data(mapOf(SUBTITLE_FILE_PATH_PARAM to "$outputPath|$duration"))
-            )
-        } catch (ex: Exception) {
-            Log.e(TAG, "Vosk transcription failed", ex)
-            Result.failure()
-        } finally {
-            ffmpegSession?.cancel()
-            if (!outputPipe.isNullOrEmpty()) {
-                FFmpegKitConfig.closeFFmpegPipe(outputPipe)
+                Result.success(
+                    Data(mapOf(SUBTITLE_FILE_PATH_PARAM to "$outputPath|$duration"))
+                )
+            } catch (ex: Exception) {
+                Log.e(TAG, "Vosk transcription failed", ex)
+                Result.failure()
+            } finally {
+                ffmpegSession?.cancel()
+                if (!outputPipe.isNullOrEmpty()) {
+                    FFmpegKitConfig.closeFFmpegPipe(outputPipe)
+                }
+
+                ffmpegSession = null
+                outputPipe = null
             }
-
-            ffmpegSession = null
-            outputPipe = null
         }
     }
 
