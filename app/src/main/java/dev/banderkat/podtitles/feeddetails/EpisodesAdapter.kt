@@ -26,7 +26,7 @@ class EpisodesAdapter(private val onClickListener: OnClickListener) :
                 oldItem: PodEpisodeItem,
                 newItem: PodEpisodeItem
             ): Boolean {
-                return ObjectsCompat.equals(oldItem, newItem)
+                return oldItem == newItem
             }
         }
     }
@@ -35,7 +35,8 @@ class EpisodesAdapter(private val onClickListener: OnClickListener) :
         private val binding: EpisodeListItemBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(episode: PodEpisodeItem) {
+        fun bind(episode: PodEpisodeItem?) {
+            if (episode == null) return
             binding.apply {
                 episodeItemTitle.text = episode.title
                 episodeItemPubdate.text = episode.pubDate
@@ -58,14 +59,14 @@ class EpisodesAdapter(private val onClickListener: OnClickListener) :
     }
 
     override fun onBindViewHolder(holder: PodEpisodeItemViewHolder, position: Int) {
-        val searchResult = getItem(position) ?: return
+        val searchResult = getItem(position)
         holder.itemView.setOnClickListener {
             onClickListener.onClick(searchResult)
         }
         holder.bind(searchResult)
     }
 
-    class OnClickListener(val clickListener: (feed: PodEpisodeItem) -> Unit) {
-        fun onClick(feed: PodEpisodeItem) = clickListener(feed)
+    class OnClickListener(val clickListener: (feed: PodEpisodeItem?) -> Unit) {
+        fun onClick(feed: PodEpisodeItem?) = clickListener(feed)
     }
 }

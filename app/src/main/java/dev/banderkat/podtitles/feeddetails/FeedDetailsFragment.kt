@@ -68,6 +68,7 @@ class FeedDetailsFragment : Fragment() {
 
         val adapter = EpisodesAdapter(
             EpisodesAdapter.OnClickListener { episode ->
+                if (episode == null) return@OnClickListener
                 val action =
                     FeedDetailsFragmentDirections.actionFeedDetailsFragmentToEpisodeFragment(
                         episode.guid,
@@ -76,12 +77,6 @@ class FeedDetailsFragment : Fragment() {
                 findNavController().navigate(action)
             }
         )
-
-        // FIXME: losing scroll state on navigation back from an episode
-        // Wait to lay out adapter until items are ready, to preserve scroll state
-        // See: https://medium.com/androiddevelopers/restore-recyclerview-scroll-position-a8fbdc9a9334
-        adapter.stateRestorationPolicy =
-            RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
 
         val dividerDecoration = DividerItemDecoration(
             binding.feedDetailsEpisodeRv.context,
@@ -93,14 +88,14 @@ class FeedDetailsFragment : Fragment() {
 
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
-                viewModel.getEpisodePages(feed.url).distinctUntilChanged().collectLatest {
-                    adapter.submitData(it)
+                viewModel.getEpisodePages(feed.url).collectLatest {
+                    adapter.submitData(lifecycle, it)
                 }
             }
         }
 
         lifecycleScope.launch {
-            adapter.loadStateFlow.distinctUntilChanged().collectLatest { loadStates ->
+            adapter.loadStateFlow.collectLatest { loadStates ->
                 if (loadStates.refresh is LoadState.Loading) {
                     binding.feedDetailsEpisodeListProgress.visibility = View.VISIBLE
                     binding.feedDetailsEpisodeRv.visibility = View.GONE
