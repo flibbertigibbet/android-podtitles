@@ -21,8 +21,8 @@ interface PodDao {
     @Query("SELECT MAX(displayOrder) from $FEED_TABLE_NAME")
     fun getMaxFeedDisplayOrder(): LiveData<Int?>
 
-    @Query("SELECT * FROM $EPISODE_TABLE_NAME WHERE feedId = :feedUrl ORDER BY pubDate DESC")
-    fun getEpisodePagesForFeed(feedUrl: String): PagingSource<Int, PodEpisode>
+    @Query("SELECT guid, title, duration, pubDate FROM $EPISODE_TABLE_NAME WHERE feedId = :feedUrl ORDER BY pubDate DESC")
+    fun getEpisodePagesForFeed(feedUrl: String): PagingSource<Int, PodEpisodeItem>
 
     @Query("SELECT * FROM $EPISODE_TABLE_NAME WHERE feedId = :feedUrl")
     fun getEpisodesForFeed(feedUrl: String): LiveData<List<PodEpisode>>

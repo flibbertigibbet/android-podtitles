@@ -23,6 +23,7 @@ import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.utils.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
@@ -69,7 +70,7 @@ class FeedDetailsFragment : Fragment() {
             EpisodesAdapter.OnClickListener { episode ->
                 val action =
                     FeedDetailsFragmentDirections.actionFeedDetailsFragmentToEpisodeFragment(
-                        episode,
+                        episode.guid,
                         feed
                     )
                 findNavController().navigate(action)
@@ -91,13 +92,15 @@ class FeedDetailsFragment : Fragment() {
         binding.feedDetailsEpisodeRv.adapter = adapter
 
         lifecycleScope.launch {
-            viewModel.getEpisodePages(feed.url).collectLatest {
-                adapter.submitData(it)
+            withContext(Dispatchers.IO) {
+                viewModel.getEpisodePages(feed.url).distinctUntilChanged().collectLatest {
+                    adapter.submitData(it)
+                }
             }
         }
 
         lifecycleScope.launch {
-            adapter.loadStateFlow.collectLatest { loadStates ->
+            adapter.loadStateFlow.distinctUntilChanged().collectLatest { loadStates ->
                 if (loadStates.refresh is LoadState.Loading) {
                     binding.feedDetailsEpisodeListProgress.visibility = View.VISIBLE
                     binding.feedDetailsEpisodeRv.visibility = View.GONE

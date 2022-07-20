@@ -3,10 +3,14 @@ package dev.banderkat.podtitles.episode
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.work.*
 import dev.banderkat.podtitles.PodTitlesApplication
+import dev.banderkat.podtitles.database.getDatabase
+import dev.banderkat.podtitles.models.PodEpisode
+import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
 import dev.banderkat.podtitles.workers.TranscribeWorker
 import dev.banderkat.podtitles.workers.TranscriptMergeWorker
@@ -24,6 +28,12 @@ class EpisodeViewModel(application: Application) : AndroidViewModel(application)
 
     private val app: PodTitlesApplication = application as PodTitlesApplication
     private val workManager = WorkManager.getInstance(application.applicationContext)
+
+    private val database = getDatabase(application)
+
+    fun getEpisode(feedUrl: String, episodeGuid: String): LiveData<PodEpisode?> {
+        return database.podDao.getEpisode(feedUrl, episodeGuid)
+    }
 
     fun onDownloadCompleted(episodeUrl: String, subtitleFilePath: String) {
         transcribe(episodeUrl, subtitleFilePath)

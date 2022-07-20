@@ -8,7 +8,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
+import androidx.paging.map
 import dev.banderkat.podtitles.database.getDatabase
+import dev.banderkat.podtitles.utils.Utils
+import kotlinx.coroutines.flow.map
 
 class FeedDetailsViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
@@ -28,7 +31,13 @@ class FeedDetailsViewModel(application: Application) : AndroidViewModel(applicat
         )
     ) {
         database.podDao.getEpisodePagesForFeed(feedUrl)
-    }.flow.cachedIn(viewModelScope)
+    }.flow.map {
+        it.map { item ->
+            item.duration = Utils.getFormattedDuration(item.duration)
+            item.pubDate = Utils.getFormattedDate(item.pubDate)
+            item
+        }
+    }.cachedIn(viewModelScope)
 
     class Factory(val app: Application) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

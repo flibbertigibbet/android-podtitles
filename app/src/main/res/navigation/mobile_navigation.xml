@@ -21,8 +21,8 @@
         android:label="@string/fragment_title_episode_details"
         tools:layout="@layout/fragment_episode" >
         <argument
-            android:name="episode"
-            app:argType="dev.banderkat.podtitles.models.PodEpisode" />
+            android:name="episodeGuid"
+            app:argType="string" />
         <argument
             android:name="feed"
             app:argType="dev.banderkat.podtitles.models.PodFeed" />

@@ -90,7 +90,6 @@ class EpisodeFragment : Fragment() {
         _binding = FragmentEpisodeBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        episode = args.episode
         feed = args.feed
         viewModel = ViewModelProvider(this)[EpisodeViewModel::class.java]
         workManager = WorkManager.getInstance(requireContext())
@@ -106,21 +105,12 @@ class EpisodeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.episodeDetailsCard.apply {
-            episodeCardTitle.text = episode.title
-            episodeCardPubDate.text = Utils.getFormattedDate(episode.pubDate)
-            episodeCardDuration.text = Utils.getFormattedDuration(episode.duration)
-            Utils.loadLogo(getDefaultImage(), requireContext(), episodeCardImage)
+        viewModel.getEpisode(feed.url, args.episodeGuid).observe(viewLifecycleOwner) {
+            if (it != null) {
+                episode = it
+                setEpisodeFields()
+            }
         }
-
-        binding.episodeCardDetailsExpandFab.setOnClickListener {
-            if (episodeDetailsExpanded) collapseCardDetails() else expandCardDetails()
-            episodeDetailsExpanded = !episodeDetailsExpanded
-        }
-
-        checkEpisodeStatus()
-
-        binding.episodeDownloadButton.setOnClickListener { sendDownloadRequest() }
     }
 
     override fun onPause() {
@@ -136,6 +126,24 @@ class EpisodeFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun setEpisodeFields() {
+        binding.episodeDetailsCard.apply {
+            episodeCardTitle.text = episode.title
+            episodeCardPubDate.text = Utils.getFormattedDate(episode.pubDate)
+            episodeCardDuration.text = Utils.getFormattedDuration(episode.duration)
+            Utils.loadLogo(getDefaultImage(), requireContext(), episodeCardImage)
+        }
+
+        binding.episodeCardDetailsExpandFab.setOnClickListener {
+            if (episodeDetailsExpanded) collapseCardDetails() else expandCardDetails()
+            episodeDetailsExpanded = !episodeDetailsExpanded
+        }
+
+        checkEpisodeStatus()
+
+        binding.episodeDownloadButton.setOnClickListener { sendDownloadRequest() }
     }
 
     private fun expandCardDetails() {

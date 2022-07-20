@@ -7,41 +7,39 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import dev.banderkat.podtitles.databinding.EpisodeListItemBinding
-import dev.banderkat.podtitles.models.PodEpisode
+import dev.banderkat.podtitles.models.PodEpisodeItem
 import dev.banderkat.podtitles.utils.Utils
 
 class EpisodesAdapter(private val onClickListener: OnClickListener) :
-    PagingDataAdapter<PodEpisode, EpisodesAdapter.PodEpisodeViewHolder>(diffCallback) {
+    PagingDataAdapter<PodEpisodeItem, EpisodesAdapter.PodEpisodeItemViewHolder>(diffCallback) {
 
     companion object {
-        val diffCallback = object : DiffUtil.ItemCallback<PodEpisode>() {
-            override fun getChangePayload(oldItem: PodEpisode, newItem: PodEpisode): Any = Any()
-
+        val diffCallback = object : DiffUtil.ItemCallback<PodEpisodeItem>() {
             override fun areItemsTheSame(
-                oldItem: PodEpisode,
-                newItem: PodEpisode
+                oldItem: PodEpisodeItem,
+                newItem: PodEpisodeItem
             ): Boolean {
                 return oldItem.guid == newItem.guid
             }
 
             override fun areContentsTheSame(
-                oldItem: PodEpisode,
-                newItem: PodEpisode
+                oldItem: PodEpisodeItem,
+                newItem: PodEpisodeItem
             ): Boolean {
                 return ObjectsCompat.equals(oldItem, newItem)
             }
         }
     }
 
-    class PodEpisodeViewHolder(
+    class PodEpisodeItemViewHolder(
         private val binding: EpisodeListItemBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(episode: PodEpisode) {
+        fun bind(episode: PodEpisodeItem) {
             binding.apply {
                 episodeItemTitle.text = episode.title
-                episodeItemPubdate.text = Utils.getFormattedDate(episode.pubDate)
-                episodeItemDuration.text = Utils.getFormattedDuration(episode.duration)
+                episodeItemPubdate.text = episode.pubDate
+                episodeItemDuration.text = episode.duration
             }
         }
     }
@@ -49,8 +47,8 @@ class EpisodesAdapter(private val onClickListener: OnClickListener) :
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int
-    ): PodEpisodeViewHolder {
-        return PodEpisodeViewHolder(
+    ): PodEpisodeItemViewHolder {
+        return PodEpisodeItemViewHolder(
             EpisodeListItemBinding.inflate(
                 LayoutInflater.from(parent.context),
                 parent,
@@ -59,7 +57,7 @@ class EpisodesAdapter(private val onClickListener: OnClickListener) :
         )
     }
 
-    override fun onBindViewHolder(holder: PodEpisodeViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: PodEpisodeItemViewHolder, position: Int) {
         val searchResult = getItem(position) ?: return
         holder.itemView.setOnClickListener {
             onClickListener.onClick(searchResult)
@@ -67,7 +65,7 @@ class EpisodesAdapter(private val onClickListener: OnClickListener) :
         holder.bind(searchResult)
     }
 
-    class OnClickListener(val clickListener: (feed: PodEpisode) -> Unit) {
-        fun onClick(feed: PodEpisode) = clickListener(feed)
+    class OnClickListener(val clickListener: (feed: PodEpisodeItem) -> Unit) {
+        fun onClick(feed: PodEpisodeItem) = clickListener(feed)
     }
 }
