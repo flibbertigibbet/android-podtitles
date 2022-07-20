@@ -4,6 +4,7 @@
     <string name="fragment_title_search_podcasts">Search podcasts</string>
     <string name="fragment_title_search_result">Search result</string>
     <string name="fragment_title_feed_details">Feed</string>
+    <string name="fragment_title_feed_full_details">Feed details</string>
     <string name="fragment_title_episode_details">Episode</string>
     <string name="title_episode">Episode</string>
     <string name="download_notification_message">Download complete</string>

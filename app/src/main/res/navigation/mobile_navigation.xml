@@ -64,7 +64,7 @@
     <fragment
         android:id="@+id/feedFullDetailsFragment"
         android:name="dev.banderkat.podtitles.feeddetails.FeedFullDetailsFragment"
-        android:label="FeedFullDetailsFragment" >
+        android:label="@string/fragment_title_feed_full_details" >
         <argument
             android:name="feed"
             app:argType="dev.banderkat.podtitles.models.PodFeed" />
