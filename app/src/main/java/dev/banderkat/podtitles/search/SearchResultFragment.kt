@@ -114,7 +114,7 @@ class SearchResultFragment : Fragment() {
             AddFeed(requireContext(), viewLifecycleOwner, httpsFeedUri) { itWorked ->
                 searchResultCardFabProgress.visibility = View.INVISIBLE
 
-                var snackText = ""
+                val snackText: String
                 if (itWorked) {
                     Log.d(TAG, "Feed added successfully! Go to feed details")
                     snackText = getString(R.string.feed_added_success)
