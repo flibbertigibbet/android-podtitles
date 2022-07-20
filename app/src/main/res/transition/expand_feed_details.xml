@@ -2,20 +2,18 @@
 <transitionSet xmlns:android="http://schemas.android.com/apk/res/android">
     <slide
         android:duration="@integer/material_motion_duration_long_1"
-        android:interpolator="@android:interpolator/accelerate_cubic"
+        android:interpolator="@android:interpolator/decelerate_cubic"
         android:slideEdge="bottom">
         <targets>
             <target android:targetId="@id/feed_card_details_expand_fab" />
             <target android:targetId="@id/feed_full_card_details_collapse_fab" />
         </targets>
     </slide>
-    <fade
-        android:duration="@integer/material_motion_duration_long_1"
-        android:interpolator="@android:interpolator/accelerate_cubic"
-        android:fadingMode="fade_in">
+    <changeBounds android:interpolator="@android:interpolator/anticipate"
+        android:duration="@integer/material_motion_duration_long_1">
         <targets>
             <target android:targetId="@+id/feed_card_holder" />
             <target android:targetId="@id/feed_full_details_container" />
         </targets>
-    </fade>
+    </changeBounds>
 </transitionSet>

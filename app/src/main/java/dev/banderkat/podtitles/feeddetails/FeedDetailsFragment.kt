@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.paging.LoadState
@@ -68,6 +67,8 @@ class FeedDetailsFragment : Fragment() {
                         episode.guid,
                         feed
                     )
+                exitTransition = null
+                reenterTransition = null
                 findNavController().navigate(action)
             }
         )
@@ -105,6 +106,7 @@ class FeedDetailsFragment : Fragment() {
                 .actionFeedDetailsFragmentToFeedFullDetailsFragment(feed)
             val transition = TransitionInflater.from(requireContext())
                 .inflateTransition(R.transition.expand_feed_details)
+            exitTransition = transition
             reenterTransition = transition
             findNavController().navigate(action)
         }

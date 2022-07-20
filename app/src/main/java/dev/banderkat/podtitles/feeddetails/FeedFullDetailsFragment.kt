@@ -35,11 +35,6 @@ class FeedFullDetailsFragment : Fragment() {
     ): View {
         _binding = FragmentFeedFullDetailsBinding.inflate(inflater, container, false)
         feed = args.feed
-
-        val transition = TransitionInflater.from(requireContext())
-            .inflateTransition(R.transition.expand_feed_details)
-        enterTransition = transition
-
         return binding.root
     }
 
