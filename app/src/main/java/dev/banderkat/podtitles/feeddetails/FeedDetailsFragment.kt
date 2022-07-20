@@ -35,7 +35,6 @@ class FeedDetailsFragment : Fragment() {
 
     private val args: FeedDetailsFragmentArgs by navArgs()
     private lateinit var feed: PodFeed
-    private var cardDetailsExpanded = false
 
     private var _binding: FragmentFeedDetailsBinding? = null
     private val binding get() = _binding!!
@@ -107,70 +106,9 @@ class FeedDetailsFragment : Fragment() {
         }
 
         binding.feedCardDetailsExpandFab.setOnClickListener {
-            if (cardDetailsExpanded) collapseCardDetails() else expandCardDetails()
-            cardDetailsExpanded = !cardDetailsExpanded
-        }
-    }
-
-    private fun expandCardDetails() {
-        binding.feedCardDetailsExpandFab.apply {
-            setImageResource(android.R.drawable.arrow_up_float)
-            contentDescription = getString(R.string.card_details_collapse_fab_description)
-        }
-
-        binding.feedDetailsCard.apply {
-            if (feed.category.isNotBlank()) {
-                feedCardCategory.text = feed.category
-                feedCardCategory.visibility = View.VISIBLE
-            }
-            if (feed.subCategory.isNotBlank() && feed.subCategory != feed.category) {
-                feedCardSubcategory.text = feed.subCategory
-                feedCardSubcategory.visibility = View.VISIBLE
-            }
-
-            if (feed.language.isNotBlank()) {
-                val language = Locale.Builder()
-                    .setLanguageTag(feed.language)
-                    .build()
-                    .displayLanguage
-                feedCardLanguage.text = language
-                feedCardLanguage.visibility = View.VISIBLE
-            }
-            if (feed.link.isNotBlank()) {
-                feedCardLink.visibility = View.VISIBLE
-                feedCardLink.setOnClickListener {
-                    val webIntent = Intent(Intent.ACTION_VIEW)
-                    webIntent.data = Uri.parse(feed.link)
-                    startActivity(webIntent)
-                }
-            }
-            if (feed.description.isNotBlank()) {
-                feedCardDescription.text = Html.fromHtml(
-                    feed.description,
-                    Html.FROM_HTML_MODE_LEGACY
-                )
-                feedCardDescription.visibility = View.VISIBLE
-            }
-            if (feed.copyright.isNotBlank()) {
-                feedCardCopyright.text = feed.copyright
-                feedCardCopyright.visibility = View.VISIBLE
-            }
-        }
-    }
-
-    private fun collapseCardDetails() {
-        binding.feedCardDetailsExpandFab.apply {
-            setImageResource(android.R.drawable.arrow_down_float)
-            contentDescription = getString(R.string.card_details_expand_fab_description)
-        }
-
-        binding.feedDetailsCard.apply {
-            feedCardCategory.visibility = View.GONE
-            feedCardSubcategory.visibility = View.GONE
-            feedCardLanguage.visibility = View.GONE
-            feedCardLink.visibility = View.GONE
-            feedCardDescription.visibility = View.GONE
-            feedCardCopyright.visibility = View.GONE
+            val action = FeedDetailsFragmentDirections
+                .actionFeedDetailsFragmentToFeedFullDetailsFragment(feed)
+            findNavController().navigate(action)
         }
     }
 }

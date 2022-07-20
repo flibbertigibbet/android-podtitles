@@ -37,6 +37,9 @@
         <argument
             android:name="feed"
             app:argType="dev.banderkat.podtitles.models.PodFeed" />
+        <action
+            android:id="@+id/action_feedDetailsFragment_to_feedFullDetailsFragment"
+            app:destination="@id/feedFullDetailsFragment" />
     </fragment>
     <fragment
         android:id="@+id/searchResultFragment"
@@ -57,5 +60,13 @@
         <action
             android:id="@+id/action_searchPodFragment_to_searchResultFragment"
             app:destination="@id/searchResultFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/feedFullDetailsFragment"
+        android:name="dev.banderkat.podtitles.feeddetails.FeedFullDetailsFragment"
+        android:label="FeedFullDetailsFragment" >
+        <argument
+            android:name="feed"
+            app:argType="dev.banderkat.podtitles.models.PodFeed" />
     </fragment>
 </navigation>
