@@ -5,10 +5,20 @@
     <item
         android:id="@+id/action_search_podcasts"
         android:icon="@android:drawable/ic_menu_search"
+        android:orderInCategory="1"
         app:iconTint="@color/white"
-        app:showAsAction="always"
+        app:showAsAction="ifRoom"
         app:iconifiedByDefault="false"
         android:iconifiedByDefault="false"
+        android:contentDescription="@string/add_podcast"
         app:actionViewClass="androidx.appcompat.widget.SearchView"
         android:title="@string/add_podcast" />
+
+    <item
+        android:id="@+id/action_manage_language_models"
+        android:orderInCategory="2"
+        android:icon="@drawable/ic_baseline_language_24"
+        android:contentDescription="@string/manage_language_models"
+        app:showAsAction="withText|never"
+        android:title="@string/manage_language_models" />
 </menu>

@@ -24,4 +24,5 @@
     <string name="download_episode_prompt">Download and transcribe episode</string>
 
     <string name="feed_details_card_transition" translatable="false">details_card_transition</string>
+    <string name="manage_language_models">Manage transcription language models</string>
 </resources>
