@@ -43,6 +43,7 @@ import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
 import dev.banderkat.podtitles.player.PodTitlesDownloadService
 import dev.banderkat.podtitles.utils.Utils
+import dev.banderkat.podtitles.workers.SUBTITLE_FILE_PATH_PARAM
 import java.io.File
 
 class EpisodeFragment : Fragment() {
@@ -77,7 +78,7 @@ class EpisodeFragment : Fragment() {
 
     private val downloadCompleteBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            Log.d("Home", "download complete broadcast received")
+            Log.d(TAG, "download complete broadcast received")
             handleDownloadComplete()
         }
     }
@@ -280,11 +281,6 @@ class EpisodeFragment : Fragment() {
 
     private fun handleDownloadComplete() {
         try {
-            Log.d(
-                TAG,
-                "Download complete for URL ${episode.url}; go create subtitles at $subtitleFilePath"
-            )
-
             subtitleFilePath = Utils.getSubtitlePathForCachePath(
                 app.downloadCache.getCachedSpans(episode.url).first().file!!.absolutePath
             )
@@ -301,7 +297,6 @@ class EpisodeFragment : Fragment() {
         val needsDownload = spans.isEmpty() || spans.find { !it.isCached } != null
 
         if (needsDownload) {
-            Log.d(TAG, "episode needs download")
             showDownloadTranscribeButton()
             return
         }
@@ -372,15 +367,10 @@ class EpisodeFragment : Fragment() {
             .setUpstreamDataSourceFactory(app.dataSourceFactory)
             .setCacheWriteDataSinkFactory(null) // Disable writing.
 
-        Log.d("Player", "Going to set subtitle URI from file path $subtitleFilePath")
         val subtitleUri = Uri.fromFile(File(subtitleFilePath!!))
-        Log.d("Player", "Got path to subtitles: $subtitleUri")
-        Log.d("Player", "Existing media item URI: ${mediaItem?.localConfiguration?.uri}")
 
         // use URI from download if just completed, or parse it from the episode URL
         val mediaUri = mediaItem?.localConfiguration?.uri ?: Uri.parse(episode.url)
-
-        Log.d("Player", "Using media URI $mediaUri")
 
         val subtitle = MediaItem.SubtitleConfiguration.Builder(subtitleUri)
             .setMimeType(MimeTypes.TEXT_VTT)
@@ -412,7 +402,6 @@ class EpisodeFragment : Fragment() {
                     .build()
 
                 exoPlayer.setMediaItem(subbedMedia)
-                Log.d("MediaPlayer", "ready to play  >>>>>>>>>>>>")
                 exoPlayer.seekTo(currentItem, playbackPosition)
                 exoPlayer.prepare()
             }
