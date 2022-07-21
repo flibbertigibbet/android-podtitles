@@ -10,7 +10,6 @@ import androidx.work.*
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.database.getDatabase
 import dev.banderkat.podtitles.models.PodEpisode
-import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
 import dev.banderkat.podtitles.workers.TranscribeWorker
 import dev.banderkat.podtitles.workers.TranscriptMergeWorker
@@ -41,13 +40,7 @@ class EpisodeViewModel(application: Application) : AndroidViewModel(application)
 
     private fun transcribe(episodeUrl: String, subtitleFilePath: String) {
         val spans = app.downloadCache.getCachedSpans(episodeUrl)
-        val cachedChunks = spans.mapIndexed { index, span ->
-            Log.d(
-                EpisodeFragment.TAG,
-                "Cached span at index $index has file ${span.file?.name} position ${span.position} is cached? ${span.isCached} is hole? ${span.isHoleSpan} open-ended? ${span.isOpenEnded}"
-            )
-            span.file!!.absolutePath
-        }
+        val cachedChunks = spans.map { span -> span.file!!.absolutePath }
 
         // create transcript workers for each downloaded audio chunk
         val workers = cachedChunks.map {

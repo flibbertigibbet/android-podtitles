@@ -90,7 +90,11 @@ object Utils {
     }
 
     fun getIntermediateResultsPathForAudioCachePath(audioCachePath: String): String {
-        return "${File(audioCachePath).nameWithoutExtension}${TranscribeWorker.INTERMEDIATE_RESULTS_FILE_EXTENSION}"
+        return "${File(audioCachePath).nameWithoutExtension}.json"
+    }
+
+    fun getWavPathForAudioCachePath(audioCachePath: String): String {
+        return "${File(audioCachePath).absoluteFile.nameWithoutExtension}.wav"
     }
 
     fun convertToHttps(url: String): String {
