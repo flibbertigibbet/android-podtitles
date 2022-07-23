@@ -25,4 +25,5 @@
     <string name="feed_details_card_transition" translatable="false">details_card_transition</string>
     <string name="manage_language_models">Manage transcription language models</string>
     <string name="delete_files">Delete files</string>
+    <string name="no_podcast_feeds">No podcast feeds added yet</string>
 </resources>

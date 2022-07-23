@@ -20,6 +20,7 @@ class FeedListFragment : Fragment() {
 
     private var _binding: FragmentFeedListBinding? = null
     private val binding get() = _binding!!
+    private lateinit var searchView: SearchView
     private val viewModel: FeedListViewModel by lazy {
         ViewModelProvider(this)[FeedListViewModel::class.java]
     }
@@ -52,6 +53,18 @@ class FeedListFragment : Fragment() {
             Log.d(TAG, "Found ${feeds.size} feeds")
             adapter.submitList(feeds)
             adapter.notifyDataSetChanged()
+
+            if (feeds.isEmpty()) {
+                binding.feedListRv.visibility = View.GONE
+                binding.feedListEmptyWrapper.visibility = View.VISIBLE
+            } else {
+                binding.feedListEmptyWrapper.visibility = View.GONE
+                binding.feedListRv.visibility = View.VISIBLE
+            }
+        }
+
+        binding.feedListEmptyAddPodcastButton.setOnClickListener {
+            searchView.onActionViewExpanded()
         }
     }
 
@@ -61,7 +74,7 @@ class FeedListFragment : Fragment() {
                 menuInflater.inflate(R.menu.app_bar_menu, menu)
                 // set up collapsed search in toolbar
                 val searchItem: MenuItem? = menu.findItem(R.id.action_search_podcasts)
-                val searchView = searchItem?.actionView as SearchView
+                searchView = searchItem?.actionView as SearchView
                 val searchManager =
                     requireActivity().getSystemService(Context.SEARCH_SERVICE) as SearchManager
                 searchView.setSearchableInfo(searchManager.getSearchableInfo(requireActivity().componentName))

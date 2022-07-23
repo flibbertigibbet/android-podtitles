@@ -5,8 +5,46 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <LinearLayout
+        android:id="@+id/feed_list_empty_wrapper"
+        tools:visibility="visible"
+        android:visibility="gone"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" >
+
+        <TextView
+            android:id="@+id/feed_list_empty_message"
+            android:textSize="32sp"
+            android:textStyle="italic"
+            android:textColor="@color/cardview_dark_background"
+            android:textAlignment="center"
+            android:layout_margin="16dp"
+            android:text="@string/no_podcast_feeds"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <ImageButton
+            android:id="@+id/feed_list_empty_add_podcast_button"
+            android:background="@drawable/rounded_button"
+            android:src="@drawable/ic_baseline_add_circle_24"
+            android:contentDescription="@string/add_podcast"
+            android:scaleType="fitCenter"
+            android:minWidth="96dp"
+            android:minHeight="96dp"
+            android:layout_gravity="center"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/feed_list_rv"
+        android:visibility="gone"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
