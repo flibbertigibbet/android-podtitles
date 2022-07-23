@@ -26,4 +26,8 @@
     <string name="manage_language_models">Manage transcription language models</string>
     <string name="delete_files">Delete files</string>
     <string name="no_podcast_feeds">No podcast feeds added yet</string>
+    <string name="confirm_delete_files_title">Delete files?</string>
+    <string name="confirm_delete_files_message">This will delete %s of downloaded audio files and %s of generated transcripts. Are you sure?</string>
+    <string name="ok">okay</string>
+    <string name="cancel">cancel</string>
 </resources>
