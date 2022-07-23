@@ -19,6 +19,14 @@
         android:orderInCategory="2"
         android:icon="@drawable/ic_baseline_language_24"
         android:contentDescription="@string/manage_language_models"
-        app:showAsAction="withText|never"
+        app:showAsAction="never"
         android:title="@string/manage_language_models" />
+
+    <item
+        android:id="@+id/action_delete_files"
+        android:orderInCategory="3"
+        android:icon="@drawable/ic_baseline_delete_24"
+        android:contentDescription="@string/delete_files"
+        app:showAsAction="never"
+        android:title="@string/delete_files" />
 </menu>

@@ -73,6 +73,7 @@ class FeedListFragment : Fragment() {
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 when (menuItem.itemId) {
                     R.id.action_manage_language_models -> Log.d(TAG, "TODO: manage language models")
+                    R.id.action_delete_files -> Log.d(TAG, "TODO: delete files")
                 }
                 return true
             }
