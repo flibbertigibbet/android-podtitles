@@ -30,4 +30,7 @@
     <string name="confirm_delete_files_message">This will delete %s of downloaded audio files and %s of generated transcripts. Are you sure?</string>
     <string name="ok">okay</string>
     <string name="cancel">cancel</string>
+    <string name="prompt_vosk_model_download">Download a transcript language model</string>
+    <string name="download_vosk_model">Download selected model</string>
+    <string name="fragment_title_manage_vosk_models">Manage transcription models</string>
 </resources>

@@ -2,7 +2,6 @@ package dev.banderkat.podtitles.feedlist
 
 import android.app.SearchManager
 import android.content.Context
-import android.content.DialogInterface
 import android.os.Bundle
 import android.util.Log
 import android.view.*
@@ -52,7 +51,6 @@ class FeedListFragment : Fragment() {
         binding.feedListRv.adapter = adapter
 
         viewModel.feeds.observe(viewLifecycleOwner) { feeds ->
-            Log.d(TAG, "Found ${feeds.size} feeds")
             adapter.submitList(feeds)
             adapter.notifyDataSetChanged()
 
@@ -79,15 +77,22 @@ class FeedListFragment : Fragment() {
                 searchView = searchItem?.actionView as SearchView
                 val searchManager =
                     requireActivity().getSystemService(Context.SEARCH_SERVICE) as SearchManager
-                searchView.setSearchableInfo(searchManager.getSearchableInfo(requireActivity().componentName))
+                searchView.setSearchableInfo(
+                    searchManager.getSearchableInfo(requireActivity().componentName)
+                )
                 searchView.setOnSearchClickListener {
-                    findNavController().navigate(R.id.action_feedListFragment_to_searchPodFragment)
+                    findNavController().navigate(
+                        FeedListFragmentDirections.actionFeedListFragmentToSearchPodFragment()
+                    )
                 }
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 when (menuItem.itemId) {
-                    R.id.action_manage_language_models -> Log.d(TAG, "TODO: manage language models")
+                    R.id.action_manage_language_models -> findNavController().navigate(
+                        FeedListFragmentDirections
+                            .actionFeedListFragmentToManageVoskModelsFragment()
+                    )
                     R.id.action_delete_files -> confirmDeleteFiles()
                 }
                 return true
@@ -100,9 +105,11 @@ class FeedListFragment : Fragment() {
             AlertDialog.Builder(it)
         }
 
-        val confirmMessage = getString(R.string.confirm_delete_files_message,
+        val confirmMessage = getString(
+            R.string.confirm_delete_files_message,
             viewModel.getDownloadCacheSize(),
-            viewModel.getTranscriptsSize())
+            viewModel.getTranscriptsSize()
+        )
 
         builder?.setMessage(confirmMessage)
             ?.setTitle(R.string.confirm_delete_files_title)
