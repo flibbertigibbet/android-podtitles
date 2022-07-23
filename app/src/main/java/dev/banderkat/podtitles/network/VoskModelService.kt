@@ -3,29 +3,25 @@ package dev.banderkat.podtitles.network
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import dev.banderkat.podtitles.models.GpodderSearchResult
+import dev.banderkat.podtitles.models.VoskModel
 import kotlinx.coroutines.Deferred
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
-import retrofit2.http.Query
 
-interface GpodderSearchService {
-    // https://gpoddernet.readthedocs.io/en/latest/api/reference/directory.html#podcast-search
-    @GET("search.json")
-    fun searchGpodderAsync(
-        @Query("q") query: String
-    ): Deferred<List<GpodderSearchResult>>
+interface VoskModelService {
+    @GET("vosk/models/model-list.json")
+    fun getVoskModelsAsync(): Deferred<List<VoskModel>>
 }
 
 private val moshi = Moshi.Builder()
     .add(KotlinJsonAdapterFactory())
     .build()
 
-class GpodderSearchNetwork(okHttpClient: OkHttpClient) {
+class VoskModelNetwork(okHttpClient: OkHttpClient) {
     companion object {
-        const val baseUrl = "https://gpodder.net/"
+        const val baseUrl = "https://alphacephei.com/"
     }
 
     private val retrofit = Retrofit.Builder()
@@ -35,5 +31,5 @@ class GpodderSearchNetwork(okHttpClient: OkHttpClient) {
         .addCallAdapterFactory(CoroutineCallAdapterFactory())
         .build()
 
-    val searchResults: GpodderSearchService = retrofit.create(GpodderSearchService::class.java)
+    val voskModels: VoskModelService = retrofit.create(VoskModelService::class.java)
 }

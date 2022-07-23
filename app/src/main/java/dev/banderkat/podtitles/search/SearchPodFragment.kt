@@ -1,7 +1,6 @@
 package dev.banderkat.podtitles.search
 
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.MenuProvider
@@ -77,7 +76,6 @@ class SearchPodFragment : Fragment() {
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-                Log.d(TAG, "menu item selected; clear search")
                 viewModel.updateSearchQuery("") // clear the search
                 searchView.onActionViewCollapsed() // close the search bar
                 findNavController().navigateUp() // go back to the feed list
@@ -97,14 +95,9 @@ class SearchPodFragment : Fragment() {
             requestFocus()
 
             setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-                override fun onQueryTextSubmit(query: String?): Boolean {
-                    Log.d(TAG, "query text $query submitted")
-                    // TODO: hide keyboard?
-                    return false
-                }
+                override fun onQueryTextSubmit(query: String?): Boolean = false
 
                 override fun onQueryTextChange(query: String?): Boolean {
-                    Log.d(TAG, "Query text changed to $query")
                     viewModel.updateSearchQuery(query ?: "")
                     return true
                 }

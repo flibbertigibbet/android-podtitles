@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 import com.squareup.moshi.Json
 import kotlinx.parcelize.Parcelize
 
-const val SEARCH_RESULT_TABLE_NAME = "gpodder_search_results"
+const val SEARCH_RESULT_TABLE_NAME = "gpodder_search_result"
 
 @Parcelize
 @Entity(tableName = SEARCH_RESULT_TABLE_NAME)
