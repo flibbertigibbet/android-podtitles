@@ -7,12 +7,10 @@ import android.widget.ImageView
 import androidx.swiperefreshlayout.widget.CircularProgressDrawable
 import com.bumptech.glide.Glide
 import dev.banderkat.podtitles.R
-import dev.banderkat.podtitles.workers.TranscribeWorker
 import dev.banderkat.podtitles.workers.TranscriptMergeWorker
 import java.io.File
 import java.text.DateFormat
 import java.text.SimpleDateFormat
-import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
 
@@ -24,6 +22,7 @@ object Utils {
     private const val GLIDE_LOADER_STROKE_WIDTH = 5f
     private const val GLIDE_LOADER_CENTER_RADIUS = 30f
     private const val TIME_MULTIPLIER = 60
+    const val VOSK_DIR = "vosk"
 
     private val utcTimeZone = TimeZone.getTimeZone("UTC")
     private val isoDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'").apply {
@@ -83,6 +82,14 @@ object Utils {
                 duration
             }
         }
+    }
+
+    fun getVoskModelPathForUrl(context: Context, voskUrl: String): String {
+        return File(
+            File(context.cacheDir, VOSK_DIR),
+            Uri.parse(voskUrl).lastPathSegment!!
+        )
+            .absolutePath
     }
 
     fun getSubtitlePathForCachePath(cachePath: String): String {
