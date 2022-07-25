@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/vosk_model_item_language"
+        style="@style/TextAppearance.AppCompat.Title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:maxLines="2"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toTopOf="@id/vosk_model_item_name"
+        app:layout_constraintEnd_toStartOf="@id/vosk_model_item_size"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_weight="1"
+        tools:text="Turkish" />
+
+    <TextView
+        android:id="@+id/vosk_model_item_size"
+        style="@style/TextAppearance.AppCompat.SearchResult.Subtitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:layout_constraintBaseline_toBaselineOf="@id/vosk_model_item_language"
+        app:layout_constraintBottom_toTopOf="@id/vosk_model_item_name"
+        app:layout_constraintEnd_toStartOf="@id/vosk_model_item_add_delete_button"
+        app:layout_constraintStart_toEndOf="@id/vosk_model_item_language"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="40 MB" />
+
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/vosk_model_item_add_delete_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:background="@drawable/ic_baseline_add_circle_24"
+        android:minWidth="48dp"
+        android:minHeight="48dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_baseline_add_circle_24"
+        android:tint="@color/purple_500"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/vosk_model_item_size"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/vosk_model_item_name"
+        style="@style/TextAppearance.AppCompat.Caption"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/vosk_model_item_language"
+        tools:text="turkish-small-0.12" />
+</androidx.constraintlayout.widget.ConstraintLayout>

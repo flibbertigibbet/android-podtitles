@@ -44,13 +44,17 @@ class ManageVoskViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    val downloadableVoskModels = database.podDao.getDownloadableVoskModels()
-
     override fun onCleared() {
         workManager.cancelAllWorkByTag(SearchViewModel.SEARCH_WORK_TAG)
         downloadWorker?.removeObserver(downloadObserver)
         super.onCleared()
     }
+
+    fun getDownloadableVoskModels(downloadedModels: String) = database.podDao
+        .getDownloadableVoskModels(downloadedModels)
+
+    fun getDownloadedVoskModels(downloadedModels: String) = database.podDao
+        .getDownloadedVoskModels(downloadedModels)
 
     fun fetchVoskModels() {
         Log.d(TAG, "Go fetch Vosk transcription models")

@@ -15,6 +15,7 @@ data class VoskModel(
     @ColumnInfo(index = true)
     val lang: String,
     @Json(name = "lang_text")
+    @ColumnInfo(index = true)
     val langText: String,
     val md5: String,
     @PrimaryKey

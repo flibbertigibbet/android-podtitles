@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "87a3535cf82edb00865a322ff4b9b1f5",
+    "identityHash": "d6530822ec9416544554c250f496a482",
     "entities": [
       {
         "tableName": "feed",
@@ -428,6 +428,15 @@
             "createSql": "CREATE INDEX IF NOT EXISTS `index_vosk_model_lang` ON `${TABLE_NAME}` (`lang`)"
           },
           {
+            "name": "index_vosk_model_langText",
+            "unique": false,
+            "columnNames": [
+              "langText"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vosk_model_langText` ON `${TABLE_NAME}` (`langText`)"
+          },
+          {
             "name": "index_vosk_model_obsolete",
             "unique": false,
             "columnNames": [
@@ -452,7 +461,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '87a3535cf82edb00865a322ff4b9b1f5')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd6530822ec9416544554c250f496a482')"
     ]
   }
 }

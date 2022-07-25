@@ -2,6 +2,7 @@ package dev.banderkat.podtitles.managevosk
 
 import android.app.Application
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +12,7 @@ import androidx.lifecycle.ViewModelProvider
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentManageVoskModelsBinding
 import dev.banderkat.podtitles.models.VoskModel
+import dev.banderkat.podtitles.utils.Utils
 
 class ManageVoskModelsFragment : Fragment() {
     companion object {
@@ -41,19 +43,37 @@ class ManageVoskModelsFragment : Fragment() {
                 viewModel.downloadVoskModel(selectedModel.url)
             }
         }
-        viewModel.downloadableVoskModels.observe(viewLifecycleOwner) { voskModels ->
-            val voskModelAdapter = VoskModelAdapter(
-                requireContext(),
-                R.layout.vosk_model_item,
-                voskModels
-            )
-            binding.downloadVoskModelSpinner.adapter = voskModelAdapter
 
-            if (voskModels.isNotEmpty()) {
-                binding.downloadVoskModelPrompt.visibility = View.VISIBLE
-                binding.downloadVoskModelSpinner.visibility = View.VISIBLE
-                binding.downloadVoskModelButton.visibility = View.VISIBLE
+        val downloadedVoskModels = Utils
+            .getDownloadedVoskModels(requireContext())
+            .joinToString(",")
+
+        viewModel
+            .getDownloadableVoskModels(downloadedVoskModels)
+            .observe(viewLifecycleOwner) { voskModels ->
+                val voskModelAdapter = VoskModelAdapter(
+                    requireContext(),
+                    R.layout.vosk_model_item,
+                    voskModels
+                )
+                binding.downloadVoskModelSpinner.adapter = voskModelAdapter
+
+                if (voskModels.isNotEmpty()) {
+                    binding.downloadVoskModelPrompt.visibility = View.VISIBLE
+                    binding.downloadVoskModelSpinner.visibility = View.VISIBLE
+                    binding.downloadVoskModelButton.visibility = View.VISIBLE
+                }
             }
+
+        viewModel
+            .getDownloadedVoskModels(downloadedVoskModels)
+            .observe(viewLifecycleOwner) { voskModels ->
+                Log.d(TAG, "Downloaded vosk models:")
+                voskModels.forEach {
+                    Log.d(TAG, "  -> $it")
+                }
+                // TODO:
+                // binding.downloadedVoskModelsRv.adapter =
         }
     }
 
