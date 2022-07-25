@@ -11,6 +11,7 @@ import okhttp3.Request
 import okio.buffer
 import okio.sink
 import java.io.File
+import java.util.*
 
 const val VOSK_MODEL_URL_PARAM = "url"
 
@@ -21,6 +22,7 @@ class VoskModelDownloadWorker(private val appContext: Context, workerParams: Wor
     CoroutineWorker(appContext, workerParams) {
     companion object {
         const val TAG = "VoskModelDownloadWorker"
+        const val UUID_FILE_NAME = "uuid"
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -30,9 +32,7 @@ class VoskModelDownloadWorker(private val appContext: Context, workerParams: Wor
                 ?: error("Missing $TAG parameter $VOSK_MODEL_URL_PARAM")
             Log.d(TAG, "going to fetch Vosk model from $url")
             val zippedModelPath = fetchVoskModel(url)
-            val zippedModelFile = File(zippedModelPath)
-            zippedModelFile.unzip()
-            zippedModelFile.delete()
+            prepareVoskModel(zippedModelPath)
             Result.success()
         } catch (ex: Exception) {
             Log.e(TAG, "Vosk model fetch failed", ex)
@@ -47,7 +47,7 @@ class VoskModelDownloadWorker(private val appContext: Context, workerParams: Wor
         okHttpClient.newCall(request).execute().use { response ->
             if (response.isSuccessful) {
                 // create directory and/or file for downloaded model, as needed
-                val folder = File(appContext.cacheDir, Utils.VOSK_DIR)
+                val folder = File(appContext.getExternalFilesDir(null), Utils.VOSK_DIR)
                 if (!folder.exists()) folder.mkdir()
                 val file = File(outputFilePath)
                 // replace any existing download with the same name
@@ -60,5 +60,23 @@ class VoskModelDownloadWorker(private val appContext: Context, workerParams: Wor
             }
         }
         return outputFilePath
+    }
+
+    private fun prepareVoskModel(zippedModelPath: String) {
+        // unzip model
+        val zippedModelFile = File(zippedModelPath)
+        zippedModelFile.unzip()
+        zippedModelFile.delete()
+
+        // add UUID file
+        val modelDirectory = File(
+            Utils.getVoskModelDirectory(appContext),
+            zippedModelFile.nameWithoutExtension
+        )
+        val uuidFile = File(modelDirectory, UUID_FILE_NAME)
+        uuidFile.createNewFile()
+        uuidFile.writer().use { writer ->
+            writer.write(UUID.randomUUID().toString())
+        }
     }
 }

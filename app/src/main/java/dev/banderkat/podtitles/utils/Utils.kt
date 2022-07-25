@@ -84,12 +84,15 @@ object Utils {
         }
     }
 
+    fun getVoskModelDirectory(context: Context): String {
+        return File(context.getExternalFilesDir(null), VOSK_DIR).canonicalPath
+    }
+
     fun getVoskModelPathForUrl(context: Context, voskUrl: String): String {
         return File(
-            File(context.cacheDir, VOSK_DIR),
+            File(context.getExternalFilesDir(null), VOSK_DIR),
             Uri.parse(voskUrl).lastPathSegment!!
-        )
-            .absolutePath
+        ).absolutePath
     }
 
     fun getSubtitlePathForCachePath(cachePath: String): String {
