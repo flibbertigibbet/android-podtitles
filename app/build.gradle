@@ -41,11 +41,6 @@ android {
         buildConfig false
         viewBinding true
     }
-    sourceSets {
-        main {
-            assets.srcDirs += "$buildDir/generated/assets"
-        }
-    }
 }
 
 dependencies {
@@ -125,16 +120,3 @@ dependencies {
     implementation "androidx.media3:media3-test-utils-robolectric:$media3_version"
     testImplementation "androidx.room:room-testing:$room_version"
 }
-
-// generate the UUID file required by Vosk to unpack the model
-tasks.register("genUUID") {
-    def uuid = UUID.randomUUID().toString()
-    def odir = file("$buildDir/generated/assets/model-en-us")
-    def ofile = file("$odir/uuid")
-    doLast {
-        mkdir odir
-        ofile.text = uuid
-    }
-}
-
-preBuild.dependsOn(genUUID)
