@@ -285,7 +285,12 @@ class EpisodeFragment : Fragment() {
                 app.downloadCache.getCachedSpans(episode.url).first().file!!.absolutePath
             )
 
-            viewModel.onDownloadCompleted(episode.url, subtitleFilePath!!)
+            val voskModelDirectory = Utils.getVoskModelDirectory(app.applicationContext)
+            // FIXME: set path
+            val voskModelParentPath = File(voskModelDirectory, "vosk-model-small-de-0.15").absolutePath
+            val voskModelPath = File(voskModelParentPath, "vosk-model-small-de-0.15").canonicalPath
+            Log.d(TAG, "Transcribe using model path $voskModelPath")
+            viewModel.onDownloadCompleted(episode.url, subtitleFilePath!!, voskModelPath)
             setUpObservers()
         } catch (ex: NoSuchElementException) {
             Log.w(TAG, "Download completed, but view gone, so cannot start transcription")

@@ -13,6 +13,7 @@ import dev.banderkat.podtitles.models.PodEpisode
 import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
 import dev.banderkat.podtitles.workers.TranscribeWorker
 import dev.banderkat.podtitles.workers.TranscriptMergeWorker
+import dev.banderkat.podtitles.workers.VOSK_MODEL_PATH_PARAM
 import java.util.concurrent.TimeUnit
 
 const val TRANSCRIBE_JOB_TAG = "transcribe"
@@ -34,18 +35,21 @@ class EpisodeViewModel(application: Application) : AndroidViewModel(application)
         return database.podDao.getEpisode(feedUrl, episodeGuid)
     }
 
-    fun onDownloadCompleted(episodeUrl: String, subtitleFilePath: String) {
-        transcribe(episodeUrl, subtitleFilePath)
+    fun onDownloadCompleted(episodeUrl: String, subtitleFilePath: String, voskModelPath: String) {
+        transcribe(episodeUrl, subtitleFilePath, voskModelPath)
     }
 
-    private fun transcribe(episodeUrl: String, subtitleFilePath: String) {
+    private fun transcribe(episodeUrl: String, subtitleFilePath: String, voskModelPath: String) {
         val spans = app.downloadCache.getCachedSpans(episodeUrl)
         val cachedChunks = spans.map { span -> span.file!!.absolutePath }
 
         // create transcript workers for each downloaded audio chunk
         val workers = cachedChunks.map {
             OneTimeWorkRequestBuilder<TranscribeWorker>()
-                .setInputData(workDataOf(AUDIO_FILE_PATH_PARAM to it))
+                .setInputData(workDataOf(
+                    AUDIO_FILE_PATH_PARAM to it,
+                    VOSK_MODEL_PATH_PARAM to voskModelPath
+                ))
                 .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
                 .setBackoffCriteria(
                     BackoffPolicy.EXPONENTIAL,
