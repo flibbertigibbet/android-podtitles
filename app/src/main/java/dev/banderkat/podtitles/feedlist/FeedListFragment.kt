@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -20,6 +21,7 @@ class FeedListFragment : Fragment() {
 
     private var _binding: FragmentFeedListBinding? = null
     private val binding get() = _binding!!
+    private lateinit var searchView: SearchView
     private val viewModel: FeedListViewModel by lazy {
         ViewModelProvider(this)[FeedListViewModel::class.java]
     }
@@ -49,9 +51,20 @@ class FeedListFragment : Fragment() {
         binding.feedListRv.adapter = adapter
 
         viewModel.feeds.observe(viewLifecycleOwner) { feeds ->
-            Log.d(TAG, "Found ${feeds.size} feeds")
             adapter.submitList(feeds)
             adapter.notifyDataSetChanged()
+
+            if (feeds.isEmpty()) {
+                binding.feedListRv.visibility = View.GONE
+                binding.feedListEmptyWrapper.visibility = View.VISIBLE
+            } else {
+                binding.feedListEmptyWrapper.visibility = View.GONE
+                binding.feedListRv.visibility = View.VISIBLE
+            }
+        }
+
+        binding.feedListEmptyAddPodcastButton.setOnClickListener {
+            searchView.onActionViewExpanded()
         }
     }
 
@@ -61,18 +74,57 @@ class FeedListFragment : Fragment() {
                 menuInflater.inflate(R.menu.app_bar_menu, menu)
                 // set up collapsed search in toolbar
                 val searchItem: MenuItem? = menu.findItem(R.id.action_search_podcasts)
-                val searchView = searchItem?.actionView as SearchView
+                searchView = searchItem?.actionView as SearchView
                 val searchManager =
                     requireActivity().getSystemService(Context.SEARCH_SERVICE) as SearchManager
-                searchView.setSearchableInfo(searchManager.getSearchableInfo(requireActivity().componentName))
+                searchView.setSearchableInfo(
+                    searchManager.getSearchableInfo(requireActivity().componentName)
+                )
                 searchView.setOnSearchClickListener {
-                    findNavController().navigate(R.id.action_feedListFragment_to_searchPodFragment)
+                    findNavController().navigate(
+                        FeedListFragmentDirections.actionFeedListFragmentToSearchPodFragment()
+                    )
                 }
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                when (menuItem.itemId) {
+                    R.id.action_manage_language_models -> findNavController().navigate(
+                        FeedListFragmentDirections
+                            .actionFeedListFragmentToManageVoskModelsFragment()
+                    )
+                    R.id.action_delete_files -> confirmDeleteFiles()
+                }
                 return true
             }
         }, viewLifecycleOwner)
+    }
+
+    private fun confirmDeleteFiles() {
+        val builder: AlertDialog.Builder? = activity?.let {
+            AlertDialog.Builder(it)
+        }
+
+        val confirmMessage = getString(
+            R.string.confirm_delete_files_message,
+            viewModel.getDownloadCacheSize(),
+            viewModel.getTranscriptsSize()
+        )
+
+        builder?.setMessage(confirmMessage)
+            ?.setTitle(R.string.confirm_delete_files_title)
+            ?.setPositiveButton(R.string.ok) { _, _ ->
+                deleteFiles()
+            }
+            ?.setNegativeButton(R.string.cancel) { _, _ ->
+                /* no-op */
+            }
+
+        val dialog: AlertDialog? = builder?.create()
+        dialog?.show()
+    }
+
+    private fun deleteFiles() {
+        viewModel.deleteFiles()
     }
 }

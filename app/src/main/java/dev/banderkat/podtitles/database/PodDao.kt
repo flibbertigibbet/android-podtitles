@@ -33,6 +33,9 @@ interface PodDao {
     @Query("SELECT * FROM $SEARCH_RESULT_TABLE_NAME ORDER BY subscribers DESC")
     fun getSearchResults(): LiveData<List<GpodderSearchResult>>
 
+    @Query("SELECT * FROM $VOSK_MODEL_TABLE_NAME WHERE type = 'small' AND obsolete = 'false' ORDER BY lang ASC")
+    fun getDownloadableVoskModels(): LiveData<List<VoskModel>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addFeed(feed: PodFeed): Long
 
@@ -44,6 +47,9 @@ interface PodDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun addGpodderResults(results: List<GpodderSearchResult>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun addVoskModels(models: List<VoskModel>)
 
     @Update
     fun updateFeed(feed: PodFeed)
@@ -57,15 +63,26 @@ interface PodDao {
     @Delete
     fun deleteEpisode(episode: PodEpisode)
 
+    @Delete
+    fun deleteVoskModel(voskModel: VoskModel)
+
     @Query("DELETE FROM $FEED_TABLE_NAME")
     fun deleteAllFeeds() // will also cascade to delete all episodes
 
     @Query("DELETE FROM $SEARCH_RESULT_TABLE_NAME")
     fun deleteAllSearchResults()
+
+    @Query("DELETE FROM $VOSK_MODEL_TABLE_NAME")
+    fun deleteAllVoskModels()
 }
 
 @Database(
-    entities = [PodFeed::class, PodEpisode::class, GpodderSearchResult::class],
+    entities = [
+        PodFeed::class,
+        PodEpisode::class,
+        GpodderSearchResult::class,
+        VoskModel::class
+    ],
     version = 1,
     exportSchema = true
 )

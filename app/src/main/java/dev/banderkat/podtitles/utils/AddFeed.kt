@@ -64,14 +64,6 @@ class AddFeed(
                 when (workInfo?.state) {
                     WorkInfo.State.SUCCEEDED -> {
                         Log.d(TAG, "Podcast fetcher successfully fetched feed at $feedUrl")
-
-                        database.podDao.getFeed(feedUrl).observe(lifecycleOwner) {
-                            Log.d(TAG, "Added feed found in DB by URL: $it")
-                        }
-                        database.podDao.getEpisodesForFeed(feedUrl).observe(lifecycleOwner) {
-                            Log.d(TAG, "Found ${it.size} episodes for added feed in DB")
-                        }
-
                         listener.invoke(true)
                     }
                     WorkInfo.State.FAILED -> {

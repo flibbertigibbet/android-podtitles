@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "f99ccb4125b596e0c91ca1436f5e9c0b",
+    "identityHash": "87a3535cf82edb00865a322ff4b9b1f5",
     "entities": [
       {
         "tableName": "feed",
@@ -281,7 +281,7 @@
         ]
       },
       {
-        "tableName": "gpodder_search_results",
+        "tableName": "gpodder_search_result",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`url` TEXT NOT NULL, `title` TEXT NOT NULL, `author` TEXT, `description` TEXT, `logoUrl` TEXT, `subscribers` INTEGER, `website` TEXT, PRIMARY KEY(`url`))",
         "fields": [
           {
@@ -335,13 +335,115 @@
         },
         "indices": [
           {
-            "name": "index_gpodder_search_results_subscribers",
+            "name": "index_gpodder_search_result_subscribers",
             "unique": false,
             "columnNames": [
               "subscribers"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_gpodder_search_results_subscribers` ON `${TABLE_NAME}` (`subscribers`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_gpodder_search_result_subscribers` ON `${TABLE_NAME}` (`subscribers`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "vosk_model",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`lang` TEXT NOT NULL, `langText` TEXT NOT NULL, `md5` TEXT NOT NULL, `name` TEXT NOT NULL, `obsolete` TEXT NOT NULL, `size` INTEGER NOT NULL, `sizeText` TEXT NOT NULL, `type` TEXT NOT NULL, `url` TEXT NOT NULL, `version` TEXT NOT NULL, PRIMARY KEY(`name`))",
+        "fields": [
+          {
+            "fieldPath": "lang",
+            "columnName": "lang",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "langText",
+            "columnName": "langText",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "md5",
+            "columnName": "md5",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "obsolete",
+            "columnName": "obsolete",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "size",
+            "columnName": "size",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sizeText",
+            "columnName": "sizeText",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "url",
+            "columnName": "url",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "version",
+            "columnName": "version",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "name"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_vosk_model_lang",
+            "unique": false,
+            "columnNames": [
+              "lang"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vosk_model_lang` ON `${TABLE_NAME}` (`lang`)"
+          },
+          {
+            "name": "index_vosk_model_obsolete",
+            "unique": false,
+            "columnNames": [
+              "obsolete"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vosk_model_obsolete` ON `${TABLE_NAME}` (`obsolete`)"
+          },
+          {
+            "name": "index_vosk_model_type",
+            "unique": false,
+            "columnNames": [
+              "type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vosk_model_type` ON `${TABLE_NAME}` (`type`)"
           }
         ],
         "foreignKeys": []
@@ -350,7 +452,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f99ccb4125b596e0c91ca1436f5e9c0b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '87a3535cf82edb00865a322ff4b9b1f5')"
     ]
   }
 }

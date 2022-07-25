@@ -24,6 +24,7 @@ import kotlin.math.roundToInt
 
 
 const val AUDIO_FILE_PATH_PARAM = "input_audio_path"
+const val VOSK_MODEL_PATH_PARAM = "vosk_model_path"
 const val SUBTITLE_FILE_PATH_PARAM = "output_ttml_path"
 
 /**
@@ -38,21 +39,12 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
         const val FFMPEG_PARAMS = "-ac 1 -ar 16000 -f wav -y -hide_banner -loglevel error"
         const val SAMPLE_RATE = 16000.0f
         const val BUFFER_SIZE_SECONDS = 0.2f
-        const val VOSK_MODEL_ASSET = "model-en-us" // TODO: support other language models
-        const val VOSK_MODEL_NAME = "model"
 
         // https://www.unimelb.edu.au/accessibility/video-captioning/style-guide
         const val MAX_CHARS_PER_CAPTION = 37 * 2
     }
 
     private val cues = mutableListOf<WebVttCue>()
-    private val model = Model(
-        StorageService.sync(
-            applicationContext,
-            VOSK_MODEL_ASSET,
-            VOSK_MODEL_NAME
-        )
-    )
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun doWork(): Result {
@@ -60,6 +52,9 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
             try {
                 val inputPath = inputData.getString(AUDIO_FILE_PATH_PARAM)
                     ?: error("Missing $TAG parameter $AUDIO_FILE_PATH_PARAM")
+
+                val modelPath = inputData.getString(VOSK_MODEL_PATH_PARAM)
+                    ?: error("Missing $TAG parameter $VOSK_MODEL_PATH_PARAM")
 
                 // get the playback length of this audio chunk in milliseconds
                 val duration = FFprobeKit
@@ -70,7 +65,7 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
                 Log.d(TAG, "Audio chunk $inputPath has duration of $duration seconds")
 
                 supervisorScope {
-                    val outputPath = recognize(inputPath)
+                    val outputPath = recognize(inputPath, modelPath)
                     Result.success(
                         Data(mapOf(SUBTITLE_FILE_PATH_PARAM to "$outputPath|$duration"))
                     )
@@ -85,10 +80,11 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
 
     // based on:
     // https://github.com/alphacep/vosk-api/blob/master/android/lib/src/main/java/org/vosk/android/SpeechStreamService.java
-    private fun recognize(inputFilePath: String): String {
+    private fun recognize(inputFilePath: String, modelPath: String): String {
         // Vosk requires 16Hz mono PCM wav. Convert it
         val wavPath = convertFFmpeg(inputFilePath)
 
+        val model = Model(modelPath)
         Recognizer(model, SAMPLE_RATE).use { recognizer ->
             recognizer.setWords(true) // include timestamps
             applicationContext.openFileInput(wavPath)

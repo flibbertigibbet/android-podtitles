@@ -14,6 +14,9 @@
         <action
             android:id="@+id/action_feedListFragment_to_searchPodFragment"
             app:destination="@id/searchPodFragment" />
+        <action
+            android:id="@+id/action_feedListFragment_to_manageVoskModelsFragment"
+            app:destination="@id/manageVoskModelsFragment" />
     </fragment>
     <fragment
         android:id="@+id/episodeFragment"
@@ -26,6 +29,9 @@
         <argument
             android:name="feed"
             app:argType="dev.banderkat.podtitles.models.PodFeed" />
+        <action
+            android:id="@+id/action_episodeFragment_to_manageVoskModelsFragment"
+            app:destination="@id/manageVoskModelsFragment" />
     </fragment>
     <fragment
         android:id="@+id/feedDetailsFragment"
@@ -69,4 +75,8 @@
             android:name="feed"
             app:argType="dev.banderkat.podtitles.models.PodFeed" />
     </fragment>
+    <fragment
+        android:id="@+id/manageVoskModelsFragment"
+        android:name="dev.banderkat.podtitles.managevosk.ManageVoskModelsFragment"
+        android:label="@string/fragment_title_manage_vosk_models" />
 </navigation>

@@ -1,18 +1,15 @@
 package dev.banderkat.podtitles.network
 
-import android.content.Context
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dev.banderkat.podtitles.models.GpodderSearchResult
 import kotlinx.coroutines.Deferred
-import okhttp3.Cache
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
-import java.io.File
 
 interface GpodderSearchService {
     // https://gpoddernet.readthedocs.io/en/latest/api/reference/directory.html#podcast-search
