@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentManageVoskModelsBinding
+import dev.banderkat.podtitles.models.VoskModel
 
 class ManageVoskModelsFragment : Fragment() {
     companion object {
@@ -34,6 +35,12 @@ class ManageVoskModelsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.downloadVoskModelButton.setOnClickListener {
+            val selectedModel = binding.downloadVoskModelSpinner.selectedItem as VoskModel?
+            if (selectedModel != null) {
+                viewModel.downloadVoskModel(selectedModel.url)
+            }
+        }
         viewModel.downloadableVoskModels.observe(viewLifecycleOwner) { voskModels ->
             val voskModelAdapter = VoskModelAdapter(
                 requireContext(),
