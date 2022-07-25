@@ -88,6 +88,11 @@ object Utils {
         return File(context.getExternalFilesDir(null), VOSK_DIR).canonicalPath
     }
 
+    fun getDownloadedVoskModels(context: Context): List<String> {
+        return File(context.getExternalFilesDir(null), VOSK_DIR)
+            .listFiles()?.map { file -> file.name } ?: listOf()
+    }
+
     fun getVoskModelPathForUrl(context: Context, voskUrl: String): String {
         return File(
             File(context.getExternalFilesDir(null), VOSK_DIR),
@@ -97,6 +102,16 @@ object Utils {
 
     fun getSubtitlePathForCachePath(cachePath: String): String {
         return "${File(cachePath).nameWithoutExtension}${TranscriptMergeWorker.SUBTITLE_FILE_EXTENSION}"
+    }
+
+    fun getSubtitles(context: Context, firstChunkPath: String): String? {
+        val localSubtitlePath = getSubtitlePathForCachePath(firstChunkPath)
+        val fileStreamPath = context.getFileStreamPath(localSubtitlePath)
+        return if (fileStreamPath.exists()) {
+            fileStreamPath.absolutePath
+        } else {
+            null
+        }
     }
 
     fun getIntermediateResultsPathForAudioCachePath(audioCachePath: String): String {

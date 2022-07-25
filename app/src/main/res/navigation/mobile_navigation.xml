@@ -29,6 +29,9 @@
         <argument
             android:name="feed"
             app:argType="dev.banderkat.podtitles.models.PodFeed" />
+        <action
+            android:id="@+id/action_episodeFragment_to_manageVoskModelsFragment"
+            app:destination="@id/manageVoskModelsFragment" />
     </fragment>
     <fragment
         android:id="@+id/feedDetailsFragment"

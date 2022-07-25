@@ -15,6 +15,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.media3.common.C.SELECTION_FLAG_AUTOSELECT
@@ -28,6 +29,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -43,7 +45,6 @@ import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
 import dev.banderkat.podtitles.player.PodTitlesDownloadService
 import dev.banderkat.podtitles.utils.Utils
-import dev.banderkat.podtitles.workers.SUBTITLE_FILE_PATH_PARAM
 import java.io.File
 
 class EpisodeFragment : Fragment() {
@@ -75,6 +76,7 @@ class EpisodeFragment : Fragment() {
 
     private var mediaItem: MediaItem? = null
     private var subtitleFilePath: String? = null
+    private var transcriptModel: String? = null
 
     private val downloadCompleteBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -144,7 +146,7 @@ class EpisodeFragment : Fragment() {
 
         checkEpisodeStatus()
 
-        binding.episodeDownloadButton.setOnClickListener { sendDownloadRequest() }
+        binding.episodeDownloadButton.setOnClickListener { promptVoskModel() }
     }
 
     private fun expandCardDetails() {
@@ -251,7 +253,8 @@ class EpisodeFragment : Fragment() {
             return
         }
 
-        subtitleFilePath = getSubtitles(
+        subtitleFilePath = Utils.getSubtitles(
+            requireContext(),
             app.downloadCache.getCachedSpans(episode.url).first().file!!.absolutePath
         )
 
@@ -281,13 +284,17 @@ class EpisodeFragment : Fragment() {
 
     private fun handleDownloadComplete() {
         try {
+            if (transcriptModel == null) {
+                Log.w(TAG, "No transcript model selected")
+                return
+            }
             subtitleFilePath = Utils.getSubtitlePathForCachePath(
                 app.downloadCache.getCachedSpans(episode.url).first().file!!.absolutePath
             )
 
             val voskModelDirectory = Utils.getVoskModelDirectory(app.applicationContext)
-            // FIXME: set path
-            val voskModelParentPath = File(voskModelDirectory, "vosk-model-small-de-0.15").absolutePath
+            val voskModelParentPath =
+                File(voskModelDirectory, transcriptModel!!).absolutePath
             val voskModelPath = File(voskModelParentPath, "vosk-model-small-de-0.15").canonicalPath
             Log.d(TAG, "Transcribe using model path $voskModelPath")
             viewModel.onDownloadCompleted(episode.url, subtitleFilePath!!, voskModelPath)
@@ -307,7 +314,7 @@ class EpisodeFragment : Fragment() {
         }
 
         // Check if this episode has already been transcribed
-        subtitleFilePath = getSubtitles(spans.first().file!!.absolutePath)
+        subtitleFilePath = Utils.getSubtitles(requireContext(), spans.first().file!!.absolutePath)
         val needsTranscription = subtitleFilePath.isNullOrBlank()
 
         if (!needsTranscription) {
@@ -338,6 +345,38 @@ class EpisodeFragment : Fragment() {
         // needs transcription and it is not running already
         Log.d(TAG, "episode needs transcription; show button")
         showDownloadTranscribeButton()
+    }
+
+    private fun promptVoskModel() {
+        val builder: AlertDialog.Builder? = activity?.let {
+            AlertDialog.Builder(it)
+        }
+
+        val models = Utils.getDownloadedVoskModels(requireContext()).toTypedArray()
+
+        if (models.isNotEmpty()) {
+            builder
+                ?.setTitle(R.string.pick_transcription_model_title)
+                ?.setItems(models) { _, which ->
+                    transcriptModel = models[which]
+                    sendDownloadRequest()
+                }
+        } else {
+            builder
+                ?.setTitle(R.string.no_transcribe_models_found)
+                ?.setMessage(R.string.no_transcribe_models_found_message)
+        }
+        builder
+            ?.setPositiveButton(R.string.go_to_download_vosk_model) { _, _ ->
+                findNavController().navigate(
+                    EpisodeFragmentDirections.actionEpisodeFragmentToManageVoskModelsFragment()
+                )
+            }
+            ?.setNegativeButton(R.string.cancel) { _, _ ->
+                /* no-op */
+            }
+        val dialog: AlertDialog? = builder?.create()
+        dialog?.show()
     }
 
     private fun sendDownloadRequest() {
@@ -379,7 +418,7 @@ class EpisodeFragment : Fragment() {
 
         val subtitle = MediaItem.SubtitleConfiguration.Builder(subtitleUri)
             .setMimeType(MimeTypes.TEXT_VTT)
-            .setLanguage(feed.language)
+            .setLanguage(feed.language) // TODO: set based on model
             .setSelectionFlags(SELECTION_FLAG_AUTOSELECT)
             .build()
 
@@ -402,8 +441,10 @@ class EpisodeFragment : Fragment() {
                 exoPlayer.trackSelector?.parameters = TrackSelectionParameters
                     .getDefaults(requireContext())
                     .buildUpon()
-                    .setPreferredTextLanguage(feed.language) // will not display if language not set
-                    .setTrackTypeDisabled(TRACK_TYPE_DEFAULT, true) // otherwise sometimes doubled
+                    // TODO: set based on omodel
+                    .setPreferredTextLanguage(feed.language)
+                    // disable default track to prevent potentially doubled subtitles
+                    .setTrackTypeDisabled(TRACK_TYPE_DEFAULT, true)
                     .build()
 
                 exoPlayer.setMediaItem(subbedMedia)
@@ -422,16 +463,6 @@ class EpisodeFragment : Fragment() {
             exoPlayer.release()
         }
         player = null
-    }
-
-    private fun getSubtitles(firstChunkPath: String): String? {
-        val localSubtitlePath = Utils.getSubtitlePathForCachePath(firstChunkPath)
-        val fileStreamPath = requireContext().getFileStreamPath(localSubtitlePath)
-        return if (fileStreamPath.exists()) {
-            fileStreamPath.absolutePath
-        } else {
-            null
-        }
     }
 
     private fun setUpObservers() {

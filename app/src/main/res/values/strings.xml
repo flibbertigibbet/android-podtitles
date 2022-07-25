@@ -33,4 +33,9 @@
     <string name="prompt_vosk_model_download">Download a transcript language model</string>
     <string name="download_vosk_model">Download selected model</string>
     <string name="fragment_title_manage_vosk_models">Manage transcription models</string>
+    <string name="transcribe">transcribe</string>
+    <string name="pick_transcription_model_title">Pick transcription model</string>
+    <string name="go_to_download_vosk_model">Get another model</string>
+    <string name="no_transcribe_models_found">No models found</string>
+    <string name="no_transcribe_models_found_message">No transcription language models found. Go download one now?</string>
 </resources>
