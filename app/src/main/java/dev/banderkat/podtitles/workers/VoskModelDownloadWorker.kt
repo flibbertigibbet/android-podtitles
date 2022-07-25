@@ -22,7 +22,6 @@ class VoskModelDownloadWorker(private val appContext: Context, workerParams: Wor
     CoroutineWorker(appContext, workerParams) {
     companion object {
         const val TAG = "VoskModelDownloadWorker"
-        const val UUID_FILE_NAME = "uuid"
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -32,7 +31,9 @@ class VoskModelDownloadWorker(private val appContext: Context, workerParams: Wor
                 ?: error("Missing $TAG parameter $VOSK_MODEL_URL_PARAM")
             Log.d(TAG, "going to fetch Vosk model from $url")
             val zippedModelPath = fetchVoskModel(url)
-            prepareVoskModel(zippedModelPath)
+            val zippedModelFile = File(zippedModelPath)
+            zippedModelFile.unzip()
+            zippedModelFile.delete()
             Result.success()
         } catch (ex: Exception) {
             Log.e(TAG, "Vosk model fetch failed", ex)
@@ -60,23 +61,5 @@ class VoskModelDownloadWorker(private val appContext: Context, workerParams: Wor
             }
         }
         return outputFilePath
-    }
-
-    private fun prepareVoskModel(zippedModelPath: String) {
-        // unzip model
-        val zippedModelFile = File(zippedModelPath)
-        zippedModelFile.unzip()
-        zippedModelFile.delete()
-
-        // add UUID file
-        val modelDirectory = File(
-            Utils.getVoskModelDirectory(appContext),
-            zippedModelFile.nameWithoutExtension
-        )
-        val uuidFile = File(modelDirectory, UUID_FILE_NAME)
-        uuidFile.createNewFile()
-        uuidFile.writer().use { writer ->
-            writer.write(UUID.randomUUID().toString())
-        }
     }
 }
