@@ -10,24 +10,24 @@
     app:cardCornerRadius="16dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:padding="4dp"
-        android:animateLayoutChanges="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/cardview_dark_background">
+        android:animateLayoutChanges="true"
+        android:background="@color/cardview_dark_background"
+        android:padding="4dp">
 
         <ImageView
             android:id="@+id/feed_card_image"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_margin="16dp"
+            android:contentDescription="@string/default_logo_description"
             android:scaleType="centerInside"
-            tools:src="@drawable/ic_headphones"
             app:layout_constraintDimensionRatio="1:1"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintWidth_percent="0.45"
-            android:contentDescription="@string/default_logo_description" />
+            tools:src="@drawable/ic_headphones" />
 
         <TextView
             android:id="@+id/feed_card_title"
@@ -40,6 +40,40 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintWidth_percent="0.45"
             tools:text="Here is where the title of the feed will go. Sometimes they are a bit long." />
+
+        <RelativeLayout
+            android:id="@+id/feed_card_delete_button_wrapper"
+            android:visibility="gone"
+            tools:visibility="visible"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/feed_card_expanded_barrier"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/feed_card_image"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_title">
+
+            <ProgressBar
+                android:id="@+id/feed_card_delete_progress"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:indeterminateTint="@color/design_default_color_primary"
+                android:visibility="invisible" />
+
+            <ImageButton
+                android:id="@+id/feed_card_delete_button"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_centerInParent="true"
+                android:background="@drawable/rounded_button"
+                android:backgroundTint="@color/material_dynamic_secondary20"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_baseline_delete_24" />
+        </RelativeLayout>
 
         <TextView
             android:id="@+id/feed_card_author"
@@ -54,52 +88,52 @@
 
         <androidx.constraintlayout.widget.Barrier
             android:id="@+id/feed_card_expanded_barrier"
-            app:layout_constraintTop_toBottomOf="@id/feed_card_author"
-            app:layout_constraintStart_toStartOf="parent"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
             app:barrierDirection="bottom"
             app:constraint_referenced_ids="feed_card_author,feed_card_image"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_width="match_parent"
-            android:layout_height="1dp" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_author" />
 
         <TextView
             android:id="@+id/feed_card_category"
-            android:visibility="gone"
-            tools:visibility="visible"
             style="@style/TextAppearance.AppCompat.Small.Inverse"
-            app:layout_constraintTop_toBottomOf="@id/feed_card_expanded_barrier"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/feed_card_subcategory"
-            android:layout_margin="16dp"
-            tools:text="Category"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toStartOf="@id/feed_card_subcategory"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_expanded_barrier"
+            tools:text="Category"
+            tools:visibility="visible" />
 
         <TextView
             android:id="@+id/feed_card_subcategory"
-            android:visibility="gone"
-            tools:visibility="visible"
             style="@style/TextAppearance.AppCompat.Small.Inverse"
-            app:layout_constraintTop_toBottomOf="@id/feed_card_expanded_barrier"
-            app:layout_constraintStart_toEndOf="@id/feed_card_category"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_margin="16dp"
-            tools:text="Sub-category"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/feed_card_category"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_expanded_barrier"
+            tools:text="Sub-category"
+            tools:visibility="visible" />
 
         <TextView
             android:id="@+id/feed_card_language"
-            android:visibility="gone"
-            tools:visibility="visible"
             style="@style/TextAppearance.AppCompat.Small.Inverse"
-            app:layout_constraintTop_toBottomOf="@id/feed_card_category"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/feed_card_link"
-            android:layout_margin="16dp"
-            tools:text="English"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toStartOf="@id/feed_card_link"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_category"
+            tools:text="English"
+            tools:visibility="visible" />
 
         <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/feed_card_link"
@@ -120,18 +154,18 @@
 
         <TextView
             android:id="@+id/feed_card_description"
-            android:autoLink="all"
-            android:visibility="gone"
-            tools:visibility="visible"
             style="@style/TextAppearance.AppCompat.Medium.Inverse"
-            app:layout_constraintTop_toBottomOf="@id/feed_card_language"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_margin="16dp"
-            android:padding="4dp"
-            tools:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sagittis, eros et laoreet euismod, lacus libero tempus mauris, a cursus nunc urna et velit. Nunc eget nisl porttitor, aliquam eros vel, mollis tortor. Nulla cursus eu orci in volutpat. Vestibulum et ligula pellentesque, pharetra nunc sit amet, vulputate ex. In varius, dolor quis consectetur tincidunt, lacus urna pharetra purus, at venenatis libero sem vel arcu. Ut efficitur dui nec urna euismod malesuada."
             android:layout_width="0dp"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:autoLink="all"
+            android:padding="4dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/feed_card_language"
+            tools:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sagittis, eros et laoreet euismod, lacus libero tempus mauris, a cursus nunc urna et velit. Nunc eget nisl porttitor, aliquam eros vel, mollis tortor. Nulla cursus eu orci in volutpat. Vestibulum et ligula pellentesque, pharetra nunc sit amet, vulputate ex. In varius, dolor quis consectetur tincidunt, lacus urna pharetra purus, at venenatis libero sem vel arcu. Ut efficitur dui nec urna euismod malesuada."
+            tools:visibility="visible" />
 
         <TextView
             android:id="@+id/feed_card_copyright"

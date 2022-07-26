@@ -15,11 +15,13 @@ import java.io.File
 import java.net.CookieHandler
 import java.net.CookieManager
 import java.net.CookiePolicy
+import java.util.concurrent.TimeUnit
 
 class PodTitlesApplication : Application() {
     companion object {
         const val httpCacheDir = "http_cache"
         const val cacheMaxSize = 50L * 1024L * 1024L // 50 MiB
+        const val readTimeOutSeconds = 20L
     }
 
     // ExoPlayer causing strict mode violations
@@ -28,6 +30,7 @@ class PodTitlesApplication : Application() {
     // Caching OkHttp client
     val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
+            .readTimeout(readTimeOutSeconds, TimeUnit.SECONDS)
             .cache(
                 okhttp3.Cache(
                     directory = File(cacheDir, httpCacheDir),

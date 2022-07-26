@@ -74,6 +74,10 @@
         <argument
             android:name="feed"
             app:argType="dev.banderkat.podtitles.models.PodFeed" />
+        <action
+            android:id="@+id/action_feedFullDetailsFragment_to_feedListFragment"
+            app:destination="@id/feedListFragment"
+            app:popUpTo="@id/feedListFragment" />
     </fragment>
     <fragment
         android:id="@+id/manageVoskModelsFragment"

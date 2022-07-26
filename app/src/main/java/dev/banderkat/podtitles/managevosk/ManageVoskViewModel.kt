@@ -5,10 +5,15 @@ import android.util.Log
 import androidx.lifecycle.*
 import androidx.work.*
 import dev.banderkat.podtitles.database.getDatabase
+import dev.banderkat.podtitles.models.VoskModel
 import dev.banderkat.podtitles.search.SearchViewModel
+import dev.banderkat.podtitles.utils.Utils
 import dev.banderkat.podtitles.workers.FetchVoskModelsWorker
 import dev.banderkat.podtitles.workers.VOSK_MODEL_URL_PARAM
 import dev.banderkat.podtitles.workers.VoskModelDownloadWorker
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ManageVoskViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
@@ -28,6 +33,7 @@ class ManageVoskViewModel(application: Application) : AndroidViewModel(applicati
         when (workInfo?.state) {
             WorkInfo.State.SUCCEEDED -> {
                 Log.d(SearchViewModel.TAG, "Successfully downloaded Vosk model")
+                fetchVoskModels() // re-fetch models to update status
                 _isLoading.postValue(false)
             }
             WorkInfo.State.FAILED -> {
@@ -44,7 +50,29 @@ class ManageVoskViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    val downloadableVoskModels = database.podDao.getDownloadableVoskModels()
+    /**
+     * Transforms the Vosk models fetched from the DB to set the field indicating if it is downloaded.
+     */
+    val voskModels = Transformations.map(database.podDao.getVoskModels()) { models ->
+        val downloadedVoskModels = Utils.getDownloadedVoskModels(application)
+        models.map { model ->
+            model.isDownloaded = model.name in downloadedVoskModels
+            model
+        }
+    }
+
+    /**
+     * Deletes a model, then re-fetches the models, to refresh download status.
+     * Models JSON file will be in HTTP cache.
+     */
+    fun deleteVoskModel(model: VoskModel) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                database.podDao.deleteVoskModel(model)
+            }
+            fetchVoskModels()
+        }
+    }
 
     override fun onCleared() {
         workManager.cancelAllWorkByTag(SearchViewModel.SEARCH_WORK_TAG)
@@ -71,6 +99,7 @@ class ManageVoskViewModel(application: Application) : AndroidViewModel(applicati
 
     fun downloadVoskModel(url: String) {
         Log.d(TAG, "Going to download Vosk model at $url")
+        _isLoading.postValue(true)
         val downloadRequest = OneTimeWorkRequestBuilder<VoskModelDownloadWorker>()
             .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
             .setInputData(workDataOf(VOSK_MODEL_URL_PARAM to url))
