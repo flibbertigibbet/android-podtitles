@@ -309,12 +309,15 @@ class EpisodeFragment : Fragment() {
             val voskModelDirectory = Utils.getVoskModelDirectory(app.applicationContext)
             val voskModelParentPath =
                 File(voskModelDirectory, transcriptModel!!).absolutePath
-            val voskModelPath = File(voskModelParentPath, "vosk-model-small-de-0.15").canonicalPath
+            val voskModelPath = File(voskModelParentPath, transcriptModel!!).canonicalPath
             Log.d(TAG, "Transcribe using model path $voskModelPath")
             viewModel.onDownloadCompleted(episode.url, subtitleFilePath!!, voskModelPath)
             setUpObservers()
         } catch (ex: NoSuchElementException) {
             Log.w(TAG, "Download completed, but view gone, so cannot start transcription")
+        } catch (ex: Exception) {
+            Log.e(TAG, "Failed to handle audio download", ex)
+            handleTranscriptionFailed()
         }
     }
 
@@ -323,6 +326,29 @@ class EpisodeFragment : Fragment() {
             Log.w(TAG, "Not attached to an activity; not showing error")
             return
         }
+
+        viewModel.cancelTranscription()
+
+        binding.episodeProgress.visibility = View.GONE
+        binding.exoPlayer.visibility = View.GONE
+        binding.episodeDownloadButton.visibility = View.VISIBLE
+
+        Snackbar.make(
+            requireContext(),
+            binding.root,
+            getString(R.string.download_failed_message),
+            Snackbar.LENGTH_LONG
+        ).show()
+    }
+
+    private fun handleTranscriptionFailed() {
+        if (activity == null) {
+            Log.w(TAG, "Not attached to an activity; not showing error")
+            return
+        }
+
+        viewModel.cancelTranscription()
+
         binding.episodeProgress.visibility = View.GONE
         binding.exoPlayer.visibility = View.GONE
         binding.episodeDownloadButton.visibility = View.VISIBLE
@@ -357,25 +383,25 @@ class EpisodeFragment : Fragment() {
         // check for workers tagged with expected subtitle file path
         subtitleFilePath = Utils.getSubtitlePathForCachePath(spans.first().file!!.absolutePath)
 
-        val transcribeWorkInfos = workManager.getWorkInfosByTag(
-            "${TRANSCRIBE_JOB_TAG}_$subtitleFilePath"
-        )
+        // It is necessary to get the live data status to accurately determine
+        // if one or more workers for this episode are running or done.
+        workManager.getWorkInfosForUniqueWorkLiveData(TRANSCRIBE_JOB_CHAIN_TAG)
+            .observe(viewLifecycleOwner) { workInfo ->
+                val isRunning = workInfo.find { info ->
+                    val forThisEpisode = info.tags.find { it.contains(subtitleFilePath!!) } != null
+                    forThisEpisode && (info.state == WorkInfo.State.ENQUEUED
+                            || info.state == WorkInfo.State.RUNNING)
+                } != null
 
-        val mergeWorkInfos = workManager.getWorkInfosByTag(
-            "${TRANSCRIPT_MERGE_JOB_TAG}_$subtitleFilePath"
-        )
-
-        val isRunning = !transcribeWorkInfos.isDone || !mergeWorkInfos.isDone
-
-        if (isRunning) {
-            Log.d(TAG, "Transcription job already in progress; show progress bar")
-            showProgress()
-            return
-        }
-
-        // needs transcription and it is not running already
-        Log.d(TAG, "episode needs transcription; show button")
-        showDownloadTranscribeButton()
+                if (isRunning) {
+                    Log.d(TAG, "Transcription job already in progress; show progress bar")
+                    showProgress()
+                } else {
+                    // needs transcription and it is not running already
+                    Log.d(TAG, "episode needs transcription; show button")
+                    showDownloadTranscribeButton()
+                }
+            }
     }
 
     private fun promptVoskModel() {
@@ -472,7 +498,7 @@ class EpisodeFragment : Fragment() {
                 exoPlayer.trackSelector?.parameters = TrackSelectionParameters
                     .getDefaults(requireContext())
                     .buildUpon()
-                    // TODO: set based on omodel
+                    // TODO: set based on model
                     .setPreferredTextLanguage(feed.language)
                     // disable default track to prevent potentially doubled subtitles
                     .setTrackTypeDisabled(TRACK_TYPE_DEFAULT, true)

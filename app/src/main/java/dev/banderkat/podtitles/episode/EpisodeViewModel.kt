@@ -2,10 +2,7 @@ package dev.banderkat.podtitles.episode
 
 import android.app.Application
 import android.util.Log
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.*
 import androidx.work.*
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.database.getDatabase
@@ -14,6 +11,9 @@ import dev.banderkat.podtitles.workers.AUDIO_FILE_PATH_PARAM
 import dev.banderkat.podtitles.workers.TranscribeWorker
 import dev.banderkat.podtitles.workers.TranscriptMergeWorker
 import dev.banderkat.podtitles.workers.VOSK_MODEL_PATH_PARAM
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
 const val TRANSCRIBE_JOB_TAG = "transcribe"
@@ -35,6 +35,10 @@ class EpisodeViewModel(application: Application) : AndroidViewModel(application)
         return database.podDao.getEpisode(feedUrl, episodeGuid)
     }
 
+    fun cancelTranscription() {
+        workManager.cancelUniqueWork(TRANSCRIBE_JOB_CHAIN_TAG)
+    }
+
     fun onDownloadCompleted(episodeUrl: String, subtitleFilePath: String, voskModelPath: String) {
         transcribe(episodeUrl, subtitleFilePath, voskModelPath)
     }
@@ -46,10 +50,12 @@ class EpisodeViewModel(application: Application) : AndroidViewModel(application)
         // create transcript workers for each downloaded audio chunk
         val workers = cachedChunks.map {
             OneTimeWorkRequestBuilder<TranscribeWorker>()
-                .setInputData(workDataOf(
-                    AUDIO_FILE_PATH_PARAM to it,
-                    VOSK_MODEL_PATH_PARAM to voskModelPath
-                ))
+                .setInputData(
+                    workDataOf(
+                        AUDIO_FILE_PATH_PARAM to it,
+                        VOSK_MODEL_PATH_PARAM to voskModelPath
+                    )
+                )
                 .setConstraints(Constraints.Builder().setRequiresStorageNotLow(true).build())
                 .setBackoffCriteria(
                     BackoffPolicy.EXPONENTIAL,

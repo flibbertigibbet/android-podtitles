@@ -23,6 +23,7 @@
     <string name="serial_season_episode">season: %s episode: %s</string>
     <string name="download_episode_prompt">Download and transcribe episode</string>
     <string name="download_failed_message">Failed to download episode</string>
+    <string name="transcription_failed_Message">Failed to transcribe episode</string>
     <string name="feed_details_card_transition" translatable="false">details_card_transition</string>
     <string name="manage_language_models">Manage transcription language models</string>
     <string name="delete_files">Delete files</string>
@@ -32,7 +33,7 @@
     <string name="fragment_title_manage_vosk_models">Manage transcription models</string>
     <string name="transcribe">transcribe</string>
     <string name="pick_transcription_model_title">Pick transcription model</string>
-    <string name="go_to_download_vosk_model">Get another model</string>
+    <string name="go_to_download_vosk_model">Go to models</string>
     <string name="no_transcribe_models_found">No models found</string>
     <string name="no_transcribe_models_found_message">No transcription language models found. Go download one now?</string>
     <string name="download_vosk_model">Download transcription model</string>
