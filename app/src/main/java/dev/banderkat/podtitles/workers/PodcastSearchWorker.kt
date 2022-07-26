@@ -7,6 +7,7 @@ import androidx.work.WorkerParameters
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.database.getDatabase
 import dev.banderkat.podtitles.network.GpodderSearchNetwork
+import java.util.concurrent.TimeUnit
 
 const val PODCAST_QUERY_PARAM = "query"
 

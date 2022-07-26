@@ -11,20 +11,23 @@ import androidx.media3.exoplayer.offline.DownloadNotificationHelper
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.scheduler.Scheduler
 import androidx.media3.exoplayer.workmanager.WorkManagerScheduler
-import dev.banderkat.podtitles.ui.MainActivity
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.R
+import dev.banderkat.podtitles.ui.MainActivity
 
-const val TAG = "PlayerDownloader"
-const val FOREGROUND_NOTIFICATION_ID = 4001
-const val SCHEDULED_WORK_NAME = "podtitles_downloads"
-const val DOWNLOAD_NOTIFICATION_CHANNEL_ID = "download_channel"
-const val DOWNLOAD_NOTIFICATION_CHANNEL_NAME = "downloads"
 const val DOWNLOAD_CONTENT_DIRECTORY = "downloads"
 const val DOWNLOAD_FINISHED_ACTION = "download_complete"
+const val DOWNLOAD_FAILED_ACTION = "download_failed"
 
 // see: https://exoplayer.dev/downloading-media.html#creating-a-downloadservice
 class PodTitlesDownloadService : DownloadService(FOREGROUND_NOTIFICATION_ID) {
+    companion object {
+        const val TAG = "PlayerDownloader"
+        const val FOREGROUND_NOTIFICATION_ID = 4001
+        const val SCHEDULED_WORK_NAME = "podtitles_downloads"
+        const val DOWNLOAD_NOTIFICATION_CHANNEL_ID = "download_channel"
+        const val DOWNLOAD_NOTIFICATION_CHANNEL_NAME = "downloads"
+    }
 
     private val downloadListener = object : DownloadManager.Listener {
 
@@ -48,6 +51,9 @@ class PodTitlesDownloadService : DownloadService(FOREGROUND_NOTIFICATION_ID) {
 
             if (download.state == Download.STATE_COMPLETED) {
                 sendBroadcast(Intent().setAction(DOWNLOAD_FINISHED_ACTION))
+            } else if (download.state == Download.STATE_FAILED) {
+                Log.e(TAG, "Audio download failed", finalException)
+                sendBroadcast(Intent().setAction(DOWNLOAD_FAILED_ACTION))
             }
         }
     }

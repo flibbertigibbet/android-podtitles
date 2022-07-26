@@ -36,12 +36,14 @@ import androidx.work.WorkManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
+import com.google.android.material.snackbar.Snackbar
 import com.google.common.collect.ImmutableList
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentEpisodeBinding
 import dev.banderkat.podtitles.models.PodEpisode
 import dev.banderkat.podtitles.models.PodFeed
+import dev.banderkat.podtitles.player.DOWNLOAD_FAILED_ACTION
 import dev.banderkat.podtitles.player.DOWNLOAD_FINISHED_ACTION
 import dev.banderkat.podtitles.player.PodTitlesDownloadService
 import dev.banderkat.podtitles.utils.Utils
@@ -85,6 +87,13 @@ class EpisodeFragment : Fragment() {
         }
     }
 
+    private val downloadFailedBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            Log.e(TAG, "download failure broadcast received")
+            handleDownloadFailed()
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -100,6 +109,11 @@ class EpisodeFragment : Fragment() {
         requireActivity().registerReceiver(
             downloadCompleteBroadcast,
             IntentFilter(DOWNLOAD_FINISHED_ACTION)
+        )
+
+        requireActivity().registerReceiver(
+            downloadFailedBroadcast,
+            IntentFilter(DOWNLOAD_FAILED_ACTION)
         )
 
         return root
@@ -302,6 +316,19 @@ class EpisodeFragment : Fragment() {
         } catch (ex: NoSuchElementException) {
             Log.w(TAG, "Download completed, but view gone, so cannot start transcription")
         }
+    }
+
+    private fun handleDownloadFailed() {
+        binding.episodeProgress.visibility = View.GONE
+        binding.exoPlayer.visibility = View.GONE
+        binding.episodeDownloadButton.visibility = View.VISIBLE
+
+        Snackbar.make(
+            requireContext(),
+            binding.root,
+            getString(R.string.download_failed_message),
+            Snackbar.LENGTH_LONG
+        ).show()
     }
 
     private fun checkEpisodeStatus() {
