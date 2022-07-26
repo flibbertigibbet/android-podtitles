@@ -17,6 +17,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.media3.common.C.SELECTION_FLAG_AUTOSELECT
 import androidx.media3.common.C.TRACK_TYPE_DEFAULT
@@ -70,27 +71,35 @@ class EpisodeFragment : Fragment() {
     private lateinit var workManager: WorkManager
     private lateinit var viewModel: EpisodeViewModel
 
+    private var episodeUrl = ""
     private var player: ExoPlayer? = null
     private var episodeDetailsExpanded = false
     private var currentItem = 0
     private var playbackPosition = 0L
     private var loadingProgressSteps = INITIAL_PROGRESS_STEPS
 
-    private var mediaItem: MediaItem? = null
-    private var subtitleFilePath: String? = null
-    private var transcriptModel: String? = null
+    private val workObserver = Observer<List<WorkInfo>> { workInfo ->
+        val subtitles = viewModel.subtitlePath.value ?: return@Observer
+        val isRunning = workInfo.find { info ->
+            val forThisEpisode = info.tags.find { it.contains(subtitles) } != null
+            forThisEpisode && (info.state == WorkInfo.State.ENQUEUED
+                    || info.state == WorkInfo.State.BLOCKED
+                    || info.state == WorkInfo.State.RUNNING)
+        } != null
+        if (isRunning) showProgress() else showDownloadTranscribeButton()
+    }
 
     private val downloadCompleteBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             Log.d(TAG, "download complete broadcast received")
-            handleDownloadComplete()
+            if (activity != null) handleDownloadComplete()
         }
     }
 
     private val downloadFailedBroadcast: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             Log.e(TAG, "download failure broadcast received")
-            handleDownloadFailed()
+            cancel(R.string.download_failed_message)
         }
     }
 
@@ -121,12 +130,19 @@ class EpisodeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        Log.d(TAG, "view created!")
 
         viewModel.getEpisode(feed.url, args.episodeGuid).observe(viewLifecycleOwner) {
             if (it != null) {
                 episode = it
                 setEpisodeFields()
+                if (episodeUrl.isEmpty()) checkEpisodeStatus(episode.url)
+                episodeUrl = episode.url // flag to only check status once
             }
+        }
+
+        viewModel.isCancelling.observe(viewLifecycleOwner) {
+            binding.episodeDownloadButton.isEnabled = !it
         }
     }
 
@@ -158,9 +174,10 @@ class EpisodeFragment : Fragment() {
             episodeDetailsExpanded = !episodeDetailsExpanded
         }
 
-        checkEpisodeStatus()
-
         binding.episodeDownloadButton.setOnClickListener { promptVoskModel() }
+        binding.episodeDownloadCancelButton.setOnClickListener {
+            cancel(R.string.download_cancelled_message)
+        }
     }
 
     private fun expandCardDetails() {
@@ -205,6 +222,27 @@ class EpisodeFragment : Fragment() {
                 episodeCardDescription.visibility = View.VISIBLE
             }
         }
+    }
+
+    private fun cancel(cancelMessageId: Int) {
+        if (activity == null) {
+            Log.w(TAG, "Not attached to an activity; not showing error")
+            return
+        }
+
+        if (!viewModel.subtitlePath.value.isNullOrEmpty()) viewModel.cancelTranscription()
+
+        binding.episodeProgress.visibility = View.GONE
+        binding.episodeDownloadCancelButton.visibility = View.GONE
+        binding.exoPlayer.visibility = View.GONE
+        binding.episodeDownloadButton.visibility = View.VISIBLE
+
+        Snackbar.make(
+            requireContext(),
+            binding.root,
+            getString(cancelMessageId),
+            Snackbar.LENGTH_LONG
+        ).show()
     }
 
     private fun collapseCardDetails() {
@@ -254,10 +292,14 @@ class EpisodeFragment : Fragment() {
     }
 
     private fun showDownloadTranscribeButton() {
+        workManager
+            .getWorkInfosForUniqueWorkLiveData(TRANSCRIBE_JOB_CHAIN_TAG)
+            .removeObserver(workObserver)
+
         binding.exoPlayer.visibility = View.GONE
         binding.episodeProgress.visibility = View.GONE
+        binding.episodeDownloadCancelButton.visibility = View.GONE
         binding.episodeDownloadButton.visibility = View.VISIBLE
-        subtitleFilePath = null
     }
 
     private fun showPlayer() {
@@ -267,10 +309,12 @@ class EpisodeFragment : Fragment() {
             return
         }
 
-        subtitleFilePath = Utils.getSubtitles(
+        val subtitleFilePath = Utils.getSubtitles(
             requireContext(),
             app.downloadCache.getCachedSpans(episode.url).first().file!!.absolutePath
         )
+
+        viewModel.setSubtitlePath(subtitleFilePath ?: "")
 
         if (subtitleFilePath.isNullOrBlank()) {
             Log.w(TAG, "Subtitle file not found. Not showing player")
@@ -279,15 +323,21 @@ class EpisodeFragment : Fragment() {
         }
 
         binding.episodeDownloadButton.visibility = View.GONE
+        binding.episodeDownloadCancelButton.visibility = View.GONE
         binding.episodeProgress.visibility = View.GONE
         binding.exoPlayer.visibility = View.VISIBLE
         initializePlayer()
     }
 
     private fun showProgress() {
+        workManager
+            .getWorkInfosForUniqueWorkLiveData(TRANSCRIBE_JOB_CHAIN_TAG)
+            .removeObserver(workObserver)
+
         binding.exoPlayer.visibility = View.GONE
         binding.episodeDownloadButton.visibility = View.GONE
         binding.episodeProgress.visibility = View.VISIBLE
+        binding.episodeDownloadCancelButton.visibility = View.VISIBLE
 
         val spans = app.downloadCache.getCachedSpans(episode.url)
         loadingProgressSteps += spans.size
@@ -298,71 +348,35 @@ class EpisodeFragment : Fragment() {
 
     private fun handleDownloadComplete() {
         try {
-            if (transcriptModel == null) {
-                Log.w(TAG, "No transcript model selected")
-                return
-            }
-            subtitleFilePath = Utils.getSubtitlePathForCachePath(
-                app.downloadCache.getCachedSpans(episode.url).first().file!!.absolutePath
-            )
+            Log.d(TAG, "handle completed download")
+            viewModel.transcriptionModel.observe(viewLifecycleOwner) { transcriptModel ->
+                if (transcriptModel.isNullOrEmpty()) {
+                    Log.w(TAG, "No transcript model selected")
+                    return@observe
+                }
+                val subtitleFilePath = Utils.getSubtitlePathForCachePath(
+                    app.downloadCache.getCachedSpans(episode.url).first().file!!.absolutePath
+                )
 
-            val voskModelDirectory = Utils.getVoskModelDirectory(app.applicationContext)
-            val voskModelParentPath =
-                File(voskModelDirectory, transcriptModel!!).absolutePath
-            val voskModelPath = File(voskModelParentPath, transcriptModel!!).canonicalPath
-            Log.d(TAG, "Transcribe using model path $voskModelPath")
-            viewModel.onDownloadCompleted(episode.url, subtitleFilePath!!, voskModelPath)
-            setUpObservers()
-        } catch (ex: NoSuchElementException) {
-            Log.w(TAG, "Download completed, but view gone, so cannot start transcription")
+                viewModel.setSubtitlePath(subtitleFilePath)
+
+                val voskModelDirectory = Utils.getVoskModelDirectory(app.applicationContext)
+                val voskModelParentPath =
+                    File(voskModelDirectory, transcriptModel).absolutePath
+                val voskModelPath = File(voskModelParentPath, transcriptModel).canonicalPath
+                Log.d(TAG, "Transcribe using model path $voskModelPath")
+                viewModel.onDownloadCompleted(episode.url, voskModelPath)
+                setUpObservers()
+            }
         } catch (ex: Exception) {
             Log.e(TAG, "Failed to handle audio download", ex)
-            handleTranscriptionFailed()
+            cancel(R.string.download_failed_message)
         }
     }
 
-    private fun handleDownloadFailed() {
-        if (activity == null) {
-            Log.w(TAG, "Not attached to an activity; not showing error")
-            return
-        }
-
-        viewModel.cancelTranscription()
-
-        binding.episodeProgress.visibility = View.GONE
-        binding.exoPlayer.visibility = View.GONE
-        binding.episodeDownloadButton.visibility = View.VISIBLE
-
-        Snackbar.make(
-            requireContext(),
-            binding.root,
-            getString(R.string.download_failed_message),
-            Snackbar.LENGTH_LONG
-        ).show()
-    }
-
-    private fun handleTranscriptionFailed() {
-        if (activity == null) {
-            Log.w(TAG, "Not attached to an activity; not showing error")
-            return
-        }
-
-        viewModel.cancelTranscription()
-
-        binding.episodeProgress.visibility = View.GONE
-        binding.exoPlayer.visibility = View.GONE
-        binding.episodeDownloadButton.visibility = View.VISIBLE
-
-        Snackbar.make(
-            requireContext(),
-            binding.root,
-            getString(R.string.download_failed_message),
-            Snackbar.LENGTH_LONG
-        ).show()
-    }
-
-    private fun checkEpisodeStatus() {
-        val spans = app.downloadCache.getCachedSpans(episode.url)
+    private fun checkEpisodeStatus(episodeUrl: String) {
+        Log.d(TAG, "check episode status")
+        val spans = app.downloadCache.getCachedSpans(episodeUrl)
         val needsDownload = spans.isEmpty() || spans.find { !it.isCached } != null
 
         if (needsDownload) {
@@ -371,7 +385,8 @@ class EpisodeFragment : Fragment() {
         }
 
         // Check if this episode has already been transcribed
-        subtitleFilePath = Utils.getSubtitles(requireContext(), spans.first().file!!.absolutePath)
+        val subtitleFilePath =
+            Utils.getSubtitles(requireContext(), spans.first().file!!.absolutePath)
         val needsTranscription = subtitleFilePath.isNullOrBlank()
 
         if (!needsTranscription) {
@@ -381,27 +396,21 @@ class EpisodeFragment : Fragment() {
         }
 
         // check for workers tagged with expected subtitle file path
-        subtitleFilePath = Utils.getSubtitlePathForCachePath(spans.first().file!!.absolutePath)
+        val subtitles = spans.first().file?.absolutePath?.let {
+            Utils.getSubtitlePathForCachePath(it)
+        }
+        viewModel.setSubtitlePath(subtitles ?: "")
+
+        if (subtitles.isNullOrEmpty()) {
+            Log.w(TAG, "Subtitle file path not found to use to check worker status")
+            showDownloadTranscribeButton()
+            return
+        }
 
         // It is necessary to get the live data status to accurately determine
         // if one or more workers for this episode are running or done.
         workManager.getWorkInfosForUniqueWorkLiveData(TRANSCRIBE_JOB_CHAIN_TAG)
-            .observe(viewLifecycleOwner) { workInfo ->
-                val isRunning = workInfo.find { info ->
-                    val forThisEpisode = info.tags.find { it.contains(subtitleFilePath!!) } != null
-                    forThisEpisode && (info.state == WorkInfo.State.ENQUEUED
-                            || info.state == WorkInfo.State.RUNNING)
-                } != null
-
-                if (isRunning) {
-                    Log.d(TAG, "Transcription job already in progress; show progress bar")
-                    showProgress()
-                } else {
-                    // needs transcription and it is not running already
-                    Log.d(TAG, "episode needs transcription; show button")
-                    showDownloadTranscribeButton()
-                }
-            }
+            .observe(viewLifecycleOwner, workObserver)
     }
 
     private fun promptVoskModel() {
@@ -410,12 +419,11 @@ class EpisodeFragment : Fragment() {
         }
 
         val models = Utils.getDownloadedVoskModels(requireContext()).toTypedArray()
-
         if (models.isNotEmpty()) {
             builder
                 ?.setTitle(R.string.pick_transcription_model_title)
                 ?.setItems(models) { _, which ->
-                    transcriptModel = models[which]
+                    viewModel.setTranscriptionModel(models[which])
                     sendDownloadRequest()
                 }
         } else {
@@ -440,6 +448,7 @@ class EpisodeFragment : Fragment() {
         binding.episodeDownloadButton.visibility = View.GONE
         binding.exoPlayer.visibility = View.GONE
         binding.episodeProgress.visibility = View.VISIBLE
+        binding.episodeDownloadCancelButton.visibility = View.VISIBLE
 
         loadingProgressSteps = INITIAL_PROGRESS_STEPS
         binding.episodeProgress.isIndeterminate = false
@@ -448,7 +457,7 @@ class EpisodeFragment : Fragment() {
         val downloadRequest = DownloadRequest
             .Builder(episode.url, Uri.parse(episode.url)).build()
 
-        mediaItem = downloadRequest.toMediaItem()
+        viewModel.setMediaItem(downloadRequest.toMediaItem())
 
         DownloadService.sendAddDownload(
             requireContext(),
@@ -463,15 +472,21 @@ class EpisodeFragment : Fragment() {
             Log.w(TAG, "Not attached to an activity; not initializing player")
             return
         }
+        val subtitles = viewModel.subtitlePath.value
+        if (subtitles.isNullOrEmpty()) {
+            Log.w(TAG, "Subtitles path not set; not initializing player")
+            return
+        }
         val cacheDataSourceFactory: DataSource.Factory = CacheDataSource.Factory()
             .setCache(app.downloadCache)
             .setUpstreamDataSourceFactory(app.dataSourceFactory)
             .setCacheWriteDataSinkFactory(null) // Disable writing.
 
-        val subtitleUri = Uri.fromFile(File(subtitleFilePath!!))
+        val subtitleUri = Uri.fromFile(File(subtitles))
 
         // use URI from download if just completed, or parse it from the episode URL
-        val mediaUri = mediaItem?.localConfiguration?.uri ?: Uri.parse(episode.url)
+        val mediaUri = viewModel.mediaItem.value
+            ?.localConfiguration?.uri ?: Uri.parse(episode.url)
 
         val subtitle = MediaItem.SubtitleConfiguration.Builder(subtitleUri)
             .setMimeType(MimeTypes.TEXT_VTT)
@@ -525,6 +540,11 @@ class EpisodeFragment : Fragment() {
     private fun setUpObservers() {
         if (activity == null) {
             Log.w(TAG, "Not attached to an activity; not setting up observers")
+            return
+        }
+        val subtitleFilePath = viewModel.subtitlePath.value
+        if (subtitleFilePath.isNullOrBlank()) {
+            Log.w(TAG, "Subtitle path not set; not setting up observers")
             return
         }
         workManager.getWorkInfosByTagLiveData("${TRANSCRIBE_JOB_TAG}_$subtitleFilePath")

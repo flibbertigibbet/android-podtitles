@@ -90,7 +90,9 @@ object Utils {
 
     fun getDownloadedVoskModels(context: Context): List<String> {
         return File(context.getExternalFilesDir(null), VOSK_DIR)
-            .listFiles()?.map { file -> file.name } ?: listOf()
+            .listFiles()
+            ?.map { file -> file.name }
+            ?.filter { !it.endsWith(".zip") }?: listOf()
     }
 
     fun deleteVoskModelDownload(context: Context, modelName: String) {
