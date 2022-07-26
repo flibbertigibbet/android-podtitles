@@ -44,4 +44,6 @@
     <string name="cancel_episode_download_prompt">Cancel download and transcription</string>
     <string name="download_cancelled_message">Download and transcription cancelled</string>
     <string name="delete_episode_prompt">Delete episode</string>
+    <string name="confirm_delete_feed_message">This will delete delete all episode downloads and transcripts for this feed, and remove the feed from your feed list. Are you sure?</string>
+    <string name="confirm_delete_feed_title">Remove feed?</string>
 </resources>

@@ -82,7 +82,6 @@ class SearchResultFragment : Fragment() {
     private fun changeFab(alreadySubscribed: Boolean) {
         if (alreadySubscribed) {
             // change button to remove feed instead of add it
-            // TODO: also change color?
             binding.searchResultCardAddFeedFab.apply {
                 setImageDrawable(
                     resources.getDrawable(

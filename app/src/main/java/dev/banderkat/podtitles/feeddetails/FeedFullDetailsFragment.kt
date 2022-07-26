@@ -7,10 +7,11 @@ import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
-import androidx.transition.TransitionInflater
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentFeedFullDetailsBinding
 import dev.banderkat.podtitles.models.PodFeed
@@ -28,6 +29,10 @@ class FeedFullDetailsFragment : Fragment() {
     private var _binding: FragmentFeedFullDetailsBinding? = null
     private val binding get() = _binding!!
 
+    private val viewModel: FeedDetailsViewModel by lazy {
+        ViewModelProvider(this)[FeedDetailsViewModel::class.java]
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -41,6 +46,10 @@ class FeedFullDetailsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        viewModel.feedDeleted.observe(viewLifecycleOwner) {
+            if (it == true) goBackToFeedList()
+        }
+
         binding.feedFullCardDetailsCollapseFab.setOnClickListener {
             findNavController().navigateUp()
         }
@@ -52,6 +61,9 @@ class FeedFullDetailsFragment : Fragment() {
                 requireContext().getString(R.string.default_logo_description)
             }
             Utils.loadLogo(feed.image, requireContext(), feedCardImage)
+
+            feedCardDeleteButtonWrapper.visibility = View.VISIBLE
+            feedCardDeleteButton.setOnClickListener { confirmDeleteFeed() }
 
             if (feed.category.isNotBlank()) {
                 feedCardCategory.text = feed.category
@@ -90,5 +102,29 @@ class FeedFullDetailsFragment : Fragment() {
                 feedCardCopyright.visibility = View.VISIBLE
             }
         }
+    }
+
+    private fun confirmDeleteFeed() {
+        val builder: AlertDialog.Builder? = activity?.let {
+            AlertDialog.Builder(it)
+        }
+
+        builder?.setMessage(R.string.confirm_delete_feed_message)
+            ?.setTitle(R.string.confirm_delete_feed_title)
+            ?.setNegativeButton(android.R.string.cancel) { _, _ -> /* no-op */ }
+            ?.setPositiveButton(android.R.string.ok) { _, _ -> deleteFeed() }
+            ?.create()
+            ?.show()
+    }
+
+    private fun goBackToFeedList() = findNavController().navigate(
+        FeedFullDetailsFragmentDirections
+            .actionFeedFullDetailsFragmentToFeedListFragment()
+    )
+
+    private fun deleteFeed() {
+        binding.feedFullDetailsCard.feedCardDeleteProgress.visibility = View.VISIBLE
+        binding.feedFullDetailsCard.feedCardDeleteButton.isEnabled = false
+        viewModel.deleteFeed(feed)
     }
 }
