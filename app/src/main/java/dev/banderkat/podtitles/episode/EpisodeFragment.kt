@@ -319,6 +319,10 @@ class EpisodeFragment : Fragment() {
     }
 
     private fun handleDownloadFailed() {
+        if (activity == null) {
+            Log.w(TAG, "Not attached to an activity; not showing error")
+            return
+        }
         binding.episodeProgress.visibility = View.GONE
         binding.exoPlayer.visibility = View.GONE
         binding.episodeDownloadButton.visibility = View.VISIBLE
