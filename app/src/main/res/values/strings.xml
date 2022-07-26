@@ -12,7 +12,7 @@
     <string name="add_podcast">Add podcast</string>
     <string name="loading">Loading…</string>
     <string name="fab_add_feed">Add feed</string>
-    <string name="fab_remove_feed">Remove feed</string>
+    <string name="remove_feed">Remove feed</string>
     <string name="feed_added_success">New feed added!</string>
     <string name="feed_added_failure">Could not add feed.</string>
     <string name="default_logo_description">Podcast logo</string>
@@ -28,14 +28,11 @@
     <string name="no_podcast_feeds">No podcast feeds added yet</string>
     <string name="confirm_delete_files_title">Delete files?</string>
     <string name="confirm_delete_files_message">This will delete %s of downloaded audio files and %s of generated transcripts. Are you sure?</string>
-    <string name="ok">okay</string>
-    <string name="cancel">cancel</string>
-    <string name="prompt_vosk_model_download">Download a transcript language model</string>
-    <string name="download_vosk_model">Download selected model</string>
     <string name="fragment_title_manage_vosk_models">Manage transcription models</string>
     <string name="transcribe">transcribe</string>
     <string name="pick_transcription_model_title">Pick transcription model</string>
     <string name="go_to_download_vosk_model">Get another model</string>
     <string name="no_transcribe_models_found">No models found</string>
     <string name="no_transcribe_models_found_message">No transcription language models found. Go download one now?</string>
+    <string name="download_vosk_model">Download transcription model</string>
 </resources>

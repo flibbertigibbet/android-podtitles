@@ -93,6 +93,10 @@ object Utils {
             .listFiles()?.map { file -> file.name } ?: listOf()
     }
 
+    fun deleteVoskModelDownload(context: Context, modelName: String) {
+        File(getVoskModelDirectory(context), modelName).deleteRecursively()
+    }
+
     fun getVoskModelPathForUrl(context: Context, voskUrl: String): String {
         return File(
             File(context.getExternalFilesDir(null), VOSK_DIR),

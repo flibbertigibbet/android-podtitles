@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "d6530822ec9416544554c250f496a482",
+    "identityHash": "8f822163fe60286a4d3191a4e01a6391",
     "entities": [
       {
         "tableName": "feed",
@@ -348,7 +348,7 @@
       },
       {
         "tableName": "vosk_model",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`lang` TEXT NOT NULL, `langText` TEXT NOT NULL, `md5` TEXT NOT NULL, `name` TEXT NOT NULL, `obsolete` TEXT NOT NULL, `size` INTEGER NOT NULL, `sizeText` TEXT NOT NULL, `type` TEXT NOT NULL, `url` TEXT NOT NULL, `version` TEXT NOT NULL, PRIMARY KEY(`name`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`lang` TEXT NOT NULL, `langText` TEXT NOT NULL, `md5` TEXT NOT NULL, `name` TEXT NOT NULL, `obsolete` TEXT NOT NULL, `size` INTEGER NOT NULL, `sizeText` TEXT NOT NULL, `type` TEXT NOT NULL, `url` TEXT NOT NULL, `version` TEXT NOT NULL, `isDownloaded` INTEGER NOT NULL, PRIMARY KEY(`name`))",
         "fields": [
           {
             "fieldPath": "lang",
@@ -409,6 +409,12 @@
             "columnName": "version",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "isDownloaded",
+            "columnName": "isDownloaded",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -461,7 +467,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd6530822ec9416544554c250f496a482')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8f822163fe60286a4d3191a4e01a6391')"
     ]
   }
 }

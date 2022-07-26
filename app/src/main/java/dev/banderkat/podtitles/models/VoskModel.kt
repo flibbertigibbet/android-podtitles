@@ -28,7 +28,8 @@ data class VoskModel(
     @ColumnInfo(index = true)
     val type: String,
     val url: String,
-    val version: String
+    val version: String,
+    var isDownloaded: Boolean = false // set programmatically based on file system contents
 ) : Parcelable {
     override fun toString(): String {
         return "VoskModelSearchResult: ($name $version $sizeText)"

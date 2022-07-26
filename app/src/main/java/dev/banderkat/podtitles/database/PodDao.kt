@@ -33,11 +33,8 @@ interface PodDao {
     @Query("SELECT * FROM $SEARCH_RESULT_TABLE_NAME ORDER BY subscribers DESC")
     fun getSearchResults(): LiveData<List<GpodderSearchResult>>
 
-    @Query("SELECT * FROM $VOSK_MODEL_TABLE_NAME WHERE type = 'small' AND obsolete = 'false' AND name NOT IN (:downloadedModels) ORDER BY langText ASC")
-    fun getDownloadableVoskModels(downloadedModels: String): LiveData<List<VoskModel>>
-
-    @Query("SELECT * FROM $VOSK_MODEL_TABLE_NAME WHERE name in (:downloadedModels) ORDER BY langText ASC")
-    fun getDownloadedVoskModels(downloadedModels: String): LiveData<List<VoskModel>>
+    @Query("SELECT * FROM $VOSK_MODEL_TABLE_NAME WHERE type = 'small' AND obsolete = 'false' ORDER BY langText ASC")
+    fun getVoskModels(): LiveData<List<VoskModel>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addFeed(feed: PodFeed): Long
@@ -59,6 +56,9 @@ interface PodDao {
 
     @Update
     fun updateEpisode(episode: PodEpisode)
+
+    @Update
+    fun updateVoskModel(model: VoskModel)
 
     @Delete
     fun deleteFeed(feed: PodFeed)

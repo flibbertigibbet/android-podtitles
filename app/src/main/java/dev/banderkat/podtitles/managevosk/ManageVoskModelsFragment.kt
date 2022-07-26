@@ -9,9 +9,9 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import dev.banderkat.podtitles.R
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
 import dev.banderkat.podtitles.databinding.FragmentManageVoskModelsBinding
-import dev.banderkat.podtitles.models.VoskModel
 import dev.banderkat.podtitles.utils.Utils
 
 class ManageVoskModelsFragment : Fragment() {
@@ -37,43 +37,39 @@ class ManageVoskModelsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.downloadVoskModelButton.setOnClickListener {
-            val selectedModel = binding.downloadVoskModelSpinner.selectedItem as VoskModel?
-            if (selectedModel != null) {
-                viewModel.downloadVoskModel(selectedModel.url)
+
+        val dividerDecoration = DividerItemDecoration(
+            binding.downloadedVoskModelsRv.context,
+            LinearLayoutManager.VERTICAL
+        )
+
+        binding.downloadedVoskModelsRv.addItemDecoration(dividerDecoration)
+
+        val adapter = VoskModelsAdapter(VoskModelsAdapter.OnClickListener { model ->
+            Log.d(TAG, "clicked model $model")
+            // TODO: show confirmation dialog
+            if (model.isDownloaded) {
+                binding.downloadedVoskModelsRv.visibility = View.GONE
+                binding.voskModelDownloadingProgress.visibility = View.VISIBLE
+                Utils.deleteVoskModelDownload(requireContext(), model.name)
+                viewModel.deleteVoskModel(model)
+                binding.voskModelDownloadingProgress.visibility = View.GONE
+                binding.downloadedVoskModelsRv.visibility = View.VISIBLE
+            } else {
+                viewModel.downloadVoskModel(model.url)
             }
-        }
+        })
 
-        val downloadedVoskModels = Utils
-            .getDownloadedVoskModels(requireContext())
-            .joinToString(",")
-
-        viewModel
-            .getDownloadableVoskModels(downloadedVoskModels)
-            .observe(viewLifecycleOwner) { voskModels ->
-                val voskModelAdapter = VoskModelAdapter(
-                    requireContext(),
-                    R.layout.vosk_model_item,
-                    voskModels
-                )
-                binding.downloadVoskModelSpinner.adapter = voskModelAdapter
-
-                if (voskModels.isNotEmpty()) {
-                    binding.downloadVoskModelPrompt.visibility = View.VISIBLE
-                    binding.downloadVoskModelSpinner.visibility = View.VISIBLE
-                    binding.downloadVoskModelButton.visibility = View.VISIBLE
-                }
+        binding.downloadedVoskModelsRv.adapter = adapter
+        viewModel.voskModels.observe(viewLifecycleOwner) { adapter.submitList(it) }
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            if (isLoading) {
+                binding.downloadedVoskModelsRv.visibility = View.GONE
+                binding.voskModelDownloadingProgress.visibility = View.VISIBLE
+            } else {
+                binding.voskModelDownloadingProgress.visibility = View.GONE
+                binding.downloadedVoskModelsRv.visibility = View.VISIBLE
             }
-
-        viewModel
-            .getDownloadedVoskModels(downloadedVoskModels)
-            .observe(viewLifecycleOwner) { voskModels ->
-                Log.d(TAG, "Downloaded vosk models:")
-                voskModels.forEach {
-                    Log.d(TAG, "  -> $it")
-                }
-                // TODO:
-                // binding.downloadedVoskModelsRv.adapter =
         }
     }
 

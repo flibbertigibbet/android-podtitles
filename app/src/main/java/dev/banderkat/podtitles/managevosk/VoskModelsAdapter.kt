@@ -1,29 +1,41 @@
 package dev.banderkat.podtitles.managevosk
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.util.ObjectsCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import dev.banderkat.podtitles.databinding.FeedCardBinding
+import dev.banderkat.podtitles.R
+import dev.banderkat.podtitles.databinding.VoskModelListItemBinding
 import dev.banderkat.podtitles.models.VoskModel
 
 class VoskModelsAdapter(
-    private val onClickListener: OnClickListener,
-    private val context: Context
+    private val onClickListener: OnClickListener
 ) :
     ListAdapter<VoskModel, VoskModelsAdapter.VoskModelViewHolder>(DiffCallback) {
 
     class VoskModelViewHolder(
-        private val binding: FeedCardBinding,
-        private val context: Context
+        private val binding: VoskModelListItemBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(model: VoskModel) {
+        fun bind(model: VoskModel, onClickListener: OnClickListener) {
             binding.apply {
-                // TODO: set views
+                voskModelItemLanguage.text = model.langText
+                voskModelItemName.text = model.name
+                voskModelItemSize.text = model.sizeText
+
+                voskModelItemAddDeleteButton.apply {
+                    setOnClickListener { onClickListener.onClick(model) }
+                    if (model.isDownloaded) {
+                        setImageDrawable(context.getDrawable(R.drawable.ic_baseline_delete_24))
+                        contentDescription = context.getString(R.string.remove_feed)
+                    } else {
+                        setImageDrawable(context.getDrawable(R.drawable.ic_baseline_add_circle_24))
+                        contentDescription = context.getString(R.string.download_vosk_model)
+                    }
+                }
             }
         }
     }
@@ -50,21 +62,17 @@ class VoskModelsAdapter(
         viewType: Int
     ): VoskModelViewHolder {
         return VoskModelViewHolder(
-            FeedCardBinding.inflate(
+            VoskModelListItemBinding.inflate(
                 LayoutInflater.from(parent.context),
                 parent,
                 false
-            ),
-            context
+            )
         )
     }
 
     override fun onBindViewHolder(holder: VoskModelViewHolder, position: Int) {
         val searchResult = getItem(position)
-        holder.itemView.setOnClickListener {
-            onClickListener.onClick(searchResult)
-        }
-        holder.bind(searchResult)
+        holder.bind(searchResult, onClickListener)
     }
 
     class OnClickListener(val clickListener: (model: VoskModel) -> Unit) {

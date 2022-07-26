@@ -90,7 +90,7 @@ class SearchResultFragment : Fragment() {
                         requireContext().theme
                     )
                 )
-                contentDescription = getString(R.string.fab_remove_feed)
+                contentDescription = getString(R.string.remove_feed)
             }
         } else {
             // add feed button

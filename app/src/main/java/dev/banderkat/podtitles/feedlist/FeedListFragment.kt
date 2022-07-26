@@ -3,7 +3,6 @@ package dev.banderkat.podtitles.feedlist
 import android.app.SearchManager
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
@@ -113,10 +112,10 @@ class FeedListFragment : Fragment() {
 
         builder?.setMessage(confirmMessage)
             ?.setTitle(R.string.confirm_delete_files_title)
-            ?.setPositiveButton(R.string.ok) { _, _ ->
+            ?.setPositiveButton(android.R.string.ok) { _, _ ->
                 deleteFiles()
             }
-            ?.setNegativeButton(R.string.cancel) { _, _ ->
+            ?.setNegativeButton(android.R.string.cancel) { _, _ ->
                 /* no-op */
             }
 

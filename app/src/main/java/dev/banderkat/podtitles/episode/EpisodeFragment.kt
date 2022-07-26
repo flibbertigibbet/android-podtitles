@@ -372,7 +372,7 @@ class EpisodeFragment : Fragment() {
                     EpisodeFragmentDirections.actionEpisodeFragmentToManageVoskModelsFragment()
                 )
             }
-            ?.setNegativeButton(R.string.cancel) { _, _ ->
+            ?.setNegativeButton(android.R.string.cancel) { _, _ ->
                 /* no-op */
             }
         val dialog: AlertDialog? = builder?.create()
