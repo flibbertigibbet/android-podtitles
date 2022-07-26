@@ -36,6 +36,9 @@ interface PodDao {
     @Query("SELECT * FROM $VOSK_MODEL_TABLE_NAME WHERE type = 'small' AND obsolete = 'false' ORDER BY langText ASC")
     fun getVoskModels(): LiveData<List<VoskModel>>
 
+    @Query("SELECT * FROM $VOSK_MODEL_TABLE_NAME WHERE name = :name")
+    fun getVoskModel(name: String): LiveData<VoskModel>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addFeed(feed: PodFeed): Long
 

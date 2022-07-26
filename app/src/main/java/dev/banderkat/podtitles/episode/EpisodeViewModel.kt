@@ -15,6 +15,7 @@ import dev.banderkat.podtitles.workers.VOSK_MODEL_PATH_PARAM
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 const val TRANSCRIBE_JOB_TAG = "transcribe"
@@ -61,6 +62,18 @@ class EpisodeViewModel(application: Application) : AndroidViewModel(application)
 
     fun setTranscriptionModel(model: String) {
         _transcriptionModel.value = model
+    }
+
+    fun deleteEpisode(episodeUrl: String) {
+        Log.d(TAG, "Deleting subtitles and cached audio from $episodeUrl")
+        val subtitles = _subtitlePath.value
+        if (!subtitles.isNullOrEmpty()) {
+            File(subtitles).delete()
+        }
+        app.downloadCache.removeResource(episodeUrl)
+        _transcriptionModel.postValue("")
+        _mediaItem.postValue(null)
+        _subtitlePath.postValue("")
     }
 
     /**

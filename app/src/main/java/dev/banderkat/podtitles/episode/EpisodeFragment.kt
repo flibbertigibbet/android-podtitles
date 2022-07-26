@@ -178,6 +178,10 @@ class EpisodeFragment : Fragment() {
         binding.episodeDownloadCancelButton.setOnClickListener {
             cancel(R.string.download_cancelled_message)
         }
+        binding.episodeDeleteButton.setOnClickListener {
+            viewModel.deleteEpisode(episode.url)
+            showDownloadTranscribeButton()
+        }
     }
 
     private fun expandCardDetails() {
@@ -235,6 +239,7 @@ class EpisodeFragment : Fragment() {
         binding.episodeProgress.visibility = View.GONE
         binding.episodeDownloadCancelButton.visibility = View.GONE
         binding.exoPlayer.visibility = View.GONE
+        binding.episodeDeleteButton.visibility = View.GONE
         binding.episodeDownloadButton.visibility = View.VISIBLE
 
         Snackbar.make(
@@ -297,6 +302,7 @@ class EpisodeFragment : Fragment() {
             .removeObserver(workObserver)
 
         binding.exoPlayer.visibility = View.GONE
+        binding.episodeDeleteButton.visibility = View.GONE
         binding.episodeProgress.visibility = View.GONE
         binding.episodeDownloadCancelButton.visibility = View.GONE
         binding.episodeDownloadButton.visibility = View.VISIBLE
@@ -326,6 +332,7 @@ class EpisodeFragment : Fragment() {
         binding.episodeDownloadCancelButton.visibility = View.GONE
         binding.episodeProgress.visibility = View.GONE
         binding.exoPlayer.visibility = View.VISIBLE
+        binding.episodeDeleteButton.visibility = View.VISIBLE
         initializePlayer()
     }
 
@@ -335,6 +342,7 @@ class EpisodeFragment : Fragment() {
             .removeObserver(workObserver)
 
         binding.exoPlayer.visibility = View.GONE
+        binding.episodeDeleteButton.visibility = View.GONE
         binding.episodeDownloadButton.visibility = View.GONE
         binding.episodeProgress.visibility = View.VISIBLE
         binding.episodeDownloadCancelButton.visibility = View.VISIBLE
@@ -447,6 +455,7 @@ class EpisodeFragment : Fragment() {
     private fun sendDownloadRequest() {
         binding.episodeDownloadButton.visibility = View.GONE
         binding.exoPlayer.visibility = View.GONE
+        binding.episodeDeleteButton.visibility = View.GONE
         binding.episodeProgress.visibility = View.VISIBLE
         binding.episodeDownloadCancelButton.visibility = View.VISIBLE
 
@@ -490,7 +499,7 @@ class EpisodeFragment : Fragment() {
 
         val subtitle = MediaItem.SubtitleConfiguration.Builder(subtitleUri)
             .setMimeType(MimeTypes.TEXT_VTT)
-            .setLanguage(feed.language) // TODO: set based on model
+            .setLanguage(feed.language) // TODO: set based on model. how to store?
             .setSelectionFlags(SELECTION_FLAG_AUTOSELECT)
             .build()
 
