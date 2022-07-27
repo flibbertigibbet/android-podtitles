@@ -130,7 +130,6 @@ class EpisodeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        Log.d(TAG, "view created!")
 
         viewModel.getEpisode(feed.url, args.episodeGuid).observe(viewLifecycleOwner) {
             if (it != null) {
@@ -144,6 +143,12 @@ class EpisodeFragment : Fragment() {
         viewModel.isCancelling.observe(viewLifecycleOwner) {
             binding.episodeDownloadButton.isEnabled = !it
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // update state on back navigation
+        if (episodeUrl.isNotEmpty()) checkEpisodeStatus(episode.url)
     }
 
     override fun onPause() {

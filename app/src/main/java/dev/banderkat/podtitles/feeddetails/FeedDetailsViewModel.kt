@@ -30,6 +30,14 @@ class FeedDetailsViewModel(application: Application) : AndroidViewModel(applicat
     val feedDeleted: LiveData<Boolean>
         get() = _feedDeleted
 
+    private val _feedUpdated = MutableLiveData(false)
+    val feedUpdated: LiveData<Boolean>
+        get() = _feedUpdated
+
+    fun setFeedUpdated(updated: Boolean) {
+        _feedUpdated.value = updated
+    }
+
     fun getEpisodePages(feedUrl: String) = Pager(
         config = PagingConfig(
             pageSize = PAGE_SIZE,

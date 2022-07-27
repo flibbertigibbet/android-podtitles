@@ -1,6 +1,7 @@
 package dev.banderkat.podtitles.feeddetails
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentFeedDetailsBinding
 import dev.banderkat.podtitles.models.PodFeed
+import dev.banderkat.podtitles.utils.FetchFeed
 import dev.banderkat.podtitles.utils.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -44,6 +46,17 @@ class FeedDetailsFragment : Fragment() {
         _binding = FragmentFeedDetailsBinding.inflate(inflater, container, false)
         feed = args.feed
         return binding.root
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (viewModel.feedUpdated.value == false) {
+            viewModel.setFeedUpdated(true)
+            FetchFeed(requireContext(), viewLifecycleOwner, feed.url, feed.displayOrder) { itWorked ->
+                Log.d(TAG, "Feed updated. Successful? $itWorked")
+                // TODO: message user if update failed
+            }
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

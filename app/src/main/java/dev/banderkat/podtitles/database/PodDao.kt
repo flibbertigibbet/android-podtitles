@@ -69,6 +69,9 @@ interface PodDao {
     @Delete
     fun deleteEpisode(episode: PodEpisode)
 
+    @Query("DELETE FROM $EPISODE_TABLE_NAME WHERE feedId = :feedUrl")
+    fun deleteAllEpisodesForFeed(feedUrl: String)
+
     @Delete
     fun deleteVoskModel(voskModel: VoskModel)
 

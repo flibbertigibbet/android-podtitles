@@ -11,14 +11,25 @@ import dev.banderkat.podtitles.workers.PODCAST_URL_PARAM
 import dev.banderkat.podtitles.workers.PodcastFetchWorker
 
 /**
- * Helper to get the current maximum display order for any existing feed,
- * then go fetch and add a new feed to the end of the existing display ordering.
+ * Helper to download and parse a podcast RSS feed.
+ *
+ * For a newly added feed, it gets the current maximum display order for any other existing feeds,
+ * then fetches and adds the new feed to the end of the existing display ordering.
+ *
+ * For an existing feed, it uses the passed existing display order to preserve its ordering.
+ *
+ * @param context Application or fragment context
+ * @param lifecycleOwner Owner for the background fetch task
+ * @param feedUrl HTTPS URL of the RSS feed to fetch
+ * @param existingDisplayOrder Optional display order, for existing feeds
+ * @param listener Calls back with job success or failure status
  */
-class AddFeed(
+class FetchFeed(
     private val context: Context,
     private val lifecycleOwner: LifecycleOwner,
     private val feedUrl: String,
-    private val listener: (success: Boolean) -> Unit
+    private val existingDisplayOrder: Int = -1,
+    private val listener: (success: Boolean) -> Unit,
 ) {
     companion object {
         const val TAG = "AddFeed"
@@ -29,11 +40,17 @@ class AddFeed(
     private val database = getDatabase(context)
 
     private val maxValObserver = Observer<Int?> {
-        fetchPodcast(it ?: 0)
+        fetchPodcast((it + 1))
     }
 
     init {
-        database.podDao.getMaxFeedDisplayOrder().observe(lifecycleOwner, maxValObserver)
+        if (existingDisplayOrder == -1) {
+            // put new feeds at the end of the display ordering
+            database.podDao.getMaxFeedDisplayOrder().observe(lifecycleOwner, maxValObserver)
+        } else {
+            // preserve display order when updating existing feeds
+            fetchPodcast(existingDisplayOrder)
+        }
     }
 
     private fun fetchPodcast(displayOrder: Int) {
