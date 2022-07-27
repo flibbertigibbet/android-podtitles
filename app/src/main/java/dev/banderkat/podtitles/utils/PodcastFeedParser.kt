@@ -126,6 +126,9 @@ class PodcastFeedParser(
                 if (parser.name == "channel") {
                     val channel = readChannel()
                     database.podDao.addFeed(channel)
+                    // delete existing episodes before re-adding them, to remove deleted episodes
+                    // on feed refresh
+                    database.podDao.deleteAllEpisodesForFeed(channel.url)
                     database.podDao.addEpisodes(episodes)
                 } else {
                     parseUtils.skip()

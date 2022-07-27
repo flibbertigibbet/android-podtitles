@@ -14,7 +14,7 @@ import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentSearchResultBinding
 import dev.banderkat.podtitles.models.GpodderSearchResult
 import dev.banderkat.podtitles.models.PodFeed
-import dev.banderkat.podtitles.utils.AddFeed
+import dev.banderkat.podtitles.utils.FetchFeed
 import dev.banderkat.podtitles.utils.Utils
 
 class SearchResultFragment : Fragment() {
@@ -110,7 +110,7 @@ class SearchResultFragment : Fragment() {
         binding.apply {
             searchResultCardFabProgress.visibility = View.VISIBLE
             searchResultCardAddFeedFab.isEnabled = false
-            AddFeed(requireContext(), viewLifecycleOwner, httpsFeedUri) { itWorked ->
+            FetchFeed(requireContext(), viewLifecycleOwner, httpsFeedUri) { itWorked ->
                 searchResultCardFabProgress.visibility = View.INVISIBLE
 
                 val snackText: String
