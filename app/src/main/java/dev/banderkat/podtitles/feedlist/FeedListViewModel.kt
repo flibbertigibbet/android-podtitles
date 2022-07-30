@@ -24,6 +24,8 @@ class FeedListViewModel(application: Application) : AndroidViewModel(application
 
     val feeds = database.podDao.getAllFeeds()
 
+    fun getFeedByUrl(url: String) = database.podDao.getFeed(url)
+
     fun getTranscriptsSize(): String = Formatter.formatShortFileSize(app,
         app.fileList().fold(0) { acc, appFile ->
             if (appFile.endsWith(SUBTITLE_FILE_EXTENSION, true)) {

@@ -46,4 +46,6 @@
     <string name="delete_episode_prompt">Delete episode</string>
     <string name="confirm_delete_feed_message">This will delete delete all episode downloads and transcripts for this feed, and remove the feed from your feed list. Are you sure?</string>
     <string name="confirm_delete_feed_title">Remove feed?</string>
+    <string name="add_podcast_by_url">Add podcast by URL</string>
+    <string name="add_podcast_by_url_prompt">Enter the web address of the RSS feed for the podcast to add.</string>
 </resources>

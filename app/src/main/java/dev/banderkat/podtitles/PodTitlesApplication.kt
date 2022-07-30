@@ -19,9 +19,10 @@ import java.util.concurrent.TimeUnit
 
 class PodTitlesApplication : Application() {
     companion object {
-        const val httpCacheDir = "http_cache"
-        const val cacheMaxSize = 50L * 1024L * 1024L // 50 MiB
-        const val readTimeOutSeconds = 20L
+        const val HTTP_CACHE_DIR = "http_cache"
+        const val CACHE_MAX_SIZE = 50L * 1024L * 1024L // 50 MiB
+        const val READ_TIMEOUT_SECONDS = 20L
+        const val APP_UA = "Android Podtitles https://github.com/flibbertigibbet/android-podtitles"
     }
 
     // ExoPlayer causing strict mode violations
@@ -30,19 +31,27 @@ class PodTitlesApplication : Application() {
     // Caching OkHttp client
     val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .readTimeout(readTimeOutSeconds, TimeUnit.SECONDS)
+            .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .cache(
                 okhttp3.Cache(
-                    directory = File(cacheDir, httpCacheDir),
-                    maxSize = cacheMaxSize
+                    directory = File(cacheDir, HTTP_CACHE_DIR),
+                    maxSize = CACHE_MAX_SIZE
                 )
             )
             .hostnameVerifier { _, _ -> true } // many feeds fail hostname verification
+            .addNetworkInterceptor { chain ->
+                chain.proceed(
+                    chain.request()
+                        .newBuilder()
+                        .header("User-Agent", APP_UA)
+                        .build()
+                )
+            }
             .build()
     }
 
     // Cache management singletons for ExoPlayer
-    val databaseProvider: DatabaseProvider by lazy {
+    private val databaseProvider: DatabaseProvider by lazy {
         StandaloneDatabaseProvider(this)
     }
 
