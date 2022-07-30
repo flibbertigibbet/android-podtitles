@@ -64,14 +64,16 @@ object Utils {
      * Parse episode durations, which may be in seconds, HH:mm:ss, or some other format.
      */
     fun getFormattedDuration(duration: String): String {
-        return try {
-            // first try to parse it as seconds (recommended in standard)
-            duration.toInt().seconds.toString()
-        } catch (ex: Exception) {
-            try {
-                // next try to parse it as a duration string
+        if (duration.isBlank()) return duration
+
+        // first try to parse it as seconds (recommended in standard)
+        var formatted = try { duration.toInt().seconds.toString() } catch (ex: Exception) { "" }
+
+        // next try to parse it as a duration string
+        if (formatted.isEmpty()) {
+            formatted = try {
                 val parts = duration.split(":")
-                var seconds = parts.last().toInt()
+                var seconds = parts.last().toIntOrNull() ?: return duration
                 if (parts.size > 1) seconds += parts[parts.size - 2].toInt() * TIME_MULTIPLIER
                 if (parts.size == 3) seconds += parts.first()
                     .toInt() * TIME_MULTIPLIER * TIME_MULTIPLIER
@@ -82,6 +84,8 @@ object Utils {
                 duration
             }
         }
+
+        return formatted
     }
 
     fun getVoskModelDirectory(context: Context): String {

@@ -15,8 +15,16 @@
         android:title="@string/add_podcast" />
 
     <item
+        android:id="@+id/action_add_podcast_by_url"
+        android:orderInCategory="3"
+        android:icon="@drawable/ic_baseline_add_circle_24"
+        android:contentDescription="@string/add_podcast_by_url"
+        app:showAsAction="never"
+        android:title="@string/add_podcast_by_url" />
+
+    <item
         android:id="@+id/action_manage_language_models"
-        android:orderInCategory="2"
+        android:orderInCategory="3"
         android:icon="@drawable/ic_baseline_language_24"
         android:contentDescription="@string/manage_language_models"
         app:showAsAction="never"

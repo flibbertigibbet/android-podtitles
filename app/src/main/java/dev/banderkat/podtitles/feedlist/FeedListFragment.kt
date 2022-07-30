@@ -2,16 +2,21 @@ package dev.banderkat.podtitles.feedlist
 
 import android.app.SearchManager
 import android.content.Context
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.*
+import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.snackbar.Snackbar
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentFeedListBinding
+import dev.banderkat.podtitles.utils.FetchFeed
 
 class FeedListFragment : Fragment() {
     companion object {
@@ -51,7 +56,6 @@ class FeedListFragment : Fragment() {
 
         viewModel.feeds.observe(viewLifecycleOwner) { feeds ->
             adapter.submitList(feeds)
-            adapter.notifyDataSetChanged()
 
             if (feeds.isEmpty()) {
                 binding.feedListRv.visibility = View.GONE
@@ -88,6 +92,7 @@ class FeedListFragment : Fragment() {
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 when (menuItem.itemId) {
+                    R.id.action_add_podcast_by_url -> promptAddFeedByUrl()
                     R.id.action_manage_language_models -> findNavController().navigate(
                         FeedListFragmentDirections
                             .actionFeedListFragmentToManageVoskModelsFragment()
@@ -97,6 +102,54 @@ class FeedListFragment : Fragment() {
                 return true
             }
         }, viewLifecycleOwner)
+    }
+
+    private fun promptAddFeedByUrl() {
+        val urlEditText = EditText(requireActivity())
+        val builder: AlertDialog.Builder? = activity?.let {
+            AlertDialog.Builder(it)
+        }
+
+        builder?.setTitle(R.string.add_podcast_by_url)
+            ?.setMessage(R.string.add_podcast_by_url_prompt)
+            ?.setView(urlEditText)
+            ?.setPositiveButton(android.R.string.ok) { _, _ ->
+                addFeedByUrl(urlEditText.text.toString())
+            }?.setNegativeButton(android.R.string.cancel) { _, _ -> /* no-op */ }
+
+        val dialog: AlertDialog? = builder?.create()
+        dialog?.show()
+    }
+
+    private fun addFeedByUrl(url: String) {
+        Log.d(TAG, "Going to try to add a feed from $url")
+        FetchFeed(requireContext(), viewLifecycleOwner, url) { succeeded ->
+            if (succeeded) {
+                Snackbar.make(
+                    binding.root,
+                    R.string.feed_added_success,
+                    Snackbar.LENGTH_LONG
+                ).show()
+
+                goToFeed(url)
+            } else {
+                Snackbar.make(
+                    binding.root,
+                    R.string.feed_added_failure,
+                    Snackbar.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    private fun goToFeed(url: String) {
+        viewModel.getFeedByUrl(url).observe(viewLifecycleOwner) { feed ->
+            if (feed == null) return@observe
+            val action =
+                FeedListFragmentDirections
+                    .actionFeedListFragmentToFeedDetailsFragment(feed)
+            findNavController().navigate(action)
+        }
     }
 
     private fun confirmDeleteFiles() {
@@ -115,9 +168,7 @@ class FeedListFragment : Fragment() {
             ?.setPositiveButton(android.R.string.ok) { _, _ ->
                 deleteFiles()
             }
-            ?.setNegativeButton(android.R.string.cancel) { _, _ ->
-                /* no-op */
-            }
+            ?.setNegativeButton(android.R.string.cancel) { _, _ -> /* no-op */ }
 
         val dialog: AlertDialog? = builder?.create()
         dialog?.show()
