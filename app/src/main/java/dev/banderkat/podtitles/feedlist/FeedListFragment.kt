@@ -2,7 +2,6 @@ package dev.banderkat.podtitles.feedlist
 
 import android.app.SearchManager
 import android.content.Context
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.*
@@ -13,6 +12,8 @@ import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentFeedListBinding
@@ -53,6 +54,7 @@ class FeedListFragment : Fragment() {
         )
 
         binding.feedListRv.adapter = adapter
+        setUpDragAndDrop(adapter)
 
         viewModel.feeds.observe(viewLifecycleOwner) { feeds ->
             adapter.submitList(feeds)
@@ -176,5 +178,73 @@ class FeedListFragment : Fragment() {
 
     private fun deleteFiles() {
         viewModel.deleteFiles()
+    }
+
+    private fun setUpDragAndDrop(adapter: FeedsAdapter) {
+        val simpleItemTouchCallback = object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
+        ) {
+            override fun isLongPressDragEnabled(): Boolean = true
+
+            override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
+                super.onSelectedChanged(viewHolder, actionState)
+                // DRAG or IDLE
+                Log.d(TAG, "onSelectedChanged: $actionState")
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                    viewHolder?.itemView?.alpha = 0.7F
+                }
+
+                viewHolder?.itemView?.invalidate()
+            }
+
+            override fun onMoved(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                fromPos: Int,
+                target: RecyclerView.ViewHolder,
+                toPos: Int,
+                x: Int,
+                y: Int
+            ) {
+                super.onMoved(recyclerView, viewHolder, fromPos, target, toPos, x, y)
+                Log.d(TAG, "onMoved ${viewHolder.itemView.tag} to ${target.itemView.tag}")
+            }
+
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                Log.d(TAG, "Dragged ${viewHolder.bindingAdapterPosition} to ${target.absoluteAdapterPosition}")
+                adapter.notifyItemMoved(
+                    viewHolder.absoluteAdapterPosition,
+                    target.absoluteAdapterPosition
+                )
+
+                moveFeed(viewHolder, target)
+                return true
+            }
+
+            override fun clearView(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder
+            ) {
+                super.clearView(recyclerView, viewHolder)
+                Log.d(TAG, "clear view")
+                viewHolder.itemView.alpha = 1F
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                /* no-op */
+            }
+        }
+
+        ItemTouchHelper(simpleItemTouchCallback).attachToRecyclerView(binding.feedListRv)
+    }
+
+    private fun moveFeed(moved: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder) {
+        val movedUrl = moved.itemView.tag
+        val targetUrl = target.itemView.tag
+        Log.d(TAG, "moved $movedUrl to $targetUrl")
     }
 }

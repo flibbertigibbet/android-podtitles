@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.database.getDatabase
+import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.workers.TranscriptMergeWorker.Companion.SUBTITLE_FILE_EXTENSION
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -25,6 +26,8 @@ class FeedListViewModel(application: Application) : AndroidViewModel(application
     val feeds = database.podDao.getAllFeeds()
 
     fun getFeedByUrl(url: String) = database.podDao.getFeed(url)
+
+    fun updateFeed(feed: PodFeed) = database.podDao.updateFeed(feed)
 
     fun getTranscriptsSize(): String = Formatter.formatShortFileSize(app,
         app.fileList().fold(0) { acc, appFile ->

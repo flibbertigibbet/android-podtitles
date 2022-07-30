@@ -22,6 +22,7 @@ class FeedsAdapter(private val onClickListener: OnClickListener, private val con
 
         fun bind(feed: PodFeed) {
             binding.apply {
+                binding.root.tag = feed.url
                 feedCardTitle.text = feed.title
                 feedCardAuthor.text = feed.author
                 feedCardImage.contentDescription = feed.imageTitle.ifEmpty {
@@ -46,7 +47,6 @@ class FeedsAdapter(private val onClickListener: OnClickListener, private val con
         ): Boolean {
             return ObjectsCompat.equals(oldItem, newItem)
         }
-
     }
 
     override fun onCreateViewHolder(
@@ -64,11 +64,11 @@ class FeedsAdapter(private val onClickListener: OnClickListener, private val con
     }
 
     override fun onBindViewHolder(holder: PodFeedViewHolder, position: Int) {
-        val searchResult = getItem(position)
+        val feed = getItem(position)
         holder.itemView.setOnClickListener {
-            onClickListener.onClick(searchResult)
+            onClickListener.onClick(feed)
         }
-        holder.bind(searchResult)
+        holder.bind(feed)
     }
 
     class OnClickListener(val clickListener: (feed: PodFeed) -> Unit) {
