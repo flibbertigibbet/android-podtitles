@@ -10,25 +10,51 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dev.banderkat.podtitles.R
 import dev.banderkat.podtitles.databinding.FragmentFeedListBinding
+import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.utils.FetchFeed
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class FeedListFragment : Fragment() {
     companion object {
         const val TAG = "FeedListFragment"
+        const val DRAGGING_ALPHA = 0.7F
+        const val STILL_ALPHA = 1F
     }
 
     private var _binding: FragmentFeedListBinding? = null
     private val binding get() = _binding!!
     private lateinit var searchView: SearchView
+    private lateinit var adapter: FeedsAdapter
     private val viewModel: FeedListViewModel by lazy {
         ViewModelProvider(this)[FeedListViewModel::class.java]
+    }
+
+    private val feedObserver = Observer<List<PodFeed>> { feeds ->
+        Log.d(TAG, "updating feed list. first feed is ${feeds.first().title}")
+        adapter.submitList(feeds)
+
+        if (feeds.isEmpty()) {
+            binding.feedListRv.visibility = View.GONE
+            binding.feedListEmptyWrapper.visibility = View.VISIBLE
+        } else {
+            showFeedList()
+        }
+    }
+
+    private fun showFeedList() {
+        binding.feedListEmptyWrapper.visibility = View.GONE
+        binding.feedListRv.visibility = View.VISIBLE
+        viewModel.feeds.removeObserver(feedObserver)
     }
 
     override fun onCreateView(
@@ -44,7 +70,7 @@ class FeedListFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupMenu()
 
-        val adapter = FeedsAdapter(
+        adapter = FeedsAdapter(
             FeedsAdapter.OnClickListener { feed ->
                 val action =
                     FeedListFragmentDirections.actionFeedListFragmentToFeedDetailsFragment(feed)
@@ -54,23 +80,22 @@ class FeedListFragment : Fragment() {
         )
 
         binding.feedListRv.adapter = adapter
-        setUpDragAndDrop(adapter)
-
-        viewModel.feeds.observe(viewLifecycleOwner) { feeds ->
-            adapter.submitList(feeds)
-
-            if (feeds.isEmpty()) {
-                binding.feedListRv.visibility = View.GONE
-                binding.feedListEmptyWrapper.visibility = View.VISIBLE
-            } else {
-                binding.feedListEmptyWrapper.visibility = View.GONE
-                binding.feedListRv.visibility = View.VISIBLE
-            }
-        }
+        setUpDragAndDrop()
 
         binding.feedListEmptyAddPodcastButton.setOnClickListener {
             searchView.onActionViewExpanded()
         }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        Log.d(TAG, "on attach")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d(TAG, "onResume")
+        viewModel.feeds.observe(viewLifecycleOwner, feedObserver)
     }
 
     private fun setupMenu() {
@@ -180,7 +205,7 @@ class FeedListFragment : Fragment() {
         viewModel.deleteFiles()
     }
 
-    private fun setUpDragAndDrop(adapter: FeedsAdapter) {
+    private fun setUpDragAndDrop() {
         val simpleItemTouchCallback = object : ItemTouchHelper.SimpleCallback(
             ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
         ) {
@@ -188,26 +213,11 @@ class FeedListFragment : Fragment() {
 
             override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
                 super.onSelectedChanged(viewHolder, actionState)
-                // DRAG or IDLE
-                Log.d(TAG, "onSelectedChanged: $actionState")
+
                 if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
-                    viewHolder?.itemView?.alpha = 0.7F
+                    // drag start
+                    viewHolder?.itemView?.alpha = DRAGGING_ALPHA
                 }
-
-                viewHolder?.itemView?.invalidate()
-            }
-
-            override fun onMoved(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                fromPos: Int,
-                target: RecyclerView.ViewHolder,
-                toPos: Int,
-                x: Int,
-                y: Int
-            ) {
-                super.onMoved(recyclerView, viewHolder, fromPos, target, toPos, x, y)
-                Log.d(TAG, "onMoved ${viewHolder.itemView.tag} to ${target.itemView.tag}")
             }
 
             override fun onMove(
@@ -215,23 +225,26 @@ class FeedListFragment : Fragment() {
                 viewHolder: RecyclerView.ViewHolder,
                 target: RecyclerView.ViewHolder
             ): Boolean {
-                Log.d(TAG, "Dragged ${viewHolder.bindingAdapterPosition} to ${target.absoluteAdapterPosition}")
+
                 adapter.notifyItemMoved(
                     viewHolder.absoluteAdapterPosition,
                     target.absoluteAdapterPosition
                 )
 
-                moveFeed(viewHolder, target)
+                Log.d(TAG, "on move ${viewHolder.absoluteAdapterPosition} to ${target.absoluteAdapterPosition}")
+
+                swapFeedOrders(viewHolder.itemView.tag.toString(), target.itemView.tag.toString())
                 return true
             }
 
+            // drag end
             override fun clearView(
                 recyclerView: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder
             ) {
+                Log.d(TAG, "clear view. view holder position is ${viewHolder.absoluteAdapterPosition}")
                 super.clearView(recyclerView, viewHolder)
-                Log.d(TAG, "clear view")
-                viewHolder.itemView.alpha = 1F
+                viewHolder.itemView.alpha = STILL_ALPHA
             }
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
@@ -242,9 +255,20 @@ class FeedListFragment : Fragment() {
         ItemTouchHelper(simpleItemTouchCallback).attachToRecyclerView(binding.feedListRv)
     }
 
-    private fun moveFeed(moved: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder) {
-        val movedUrl = moved.itemView.tag
-        val targetUrl = target.itemView.tag
-        Log.d(TAG, "moved $movedUrl to $targetUrl")
+    private fun swapFeeds(feedPair: Pair<PodFeed, PodFeed>) {
+        val positionOne = feedPair.first.displayOrder
+        feedPair.first.displayOrder = feedPair.second.displayOrder
+        feedPair.second.displayOrder = positionOne
+        viewModel.updateFeedPair(feedPair)
+        Log.d(TAG, "swapped feed orders for ${feedPair.first.title} and ${feedPair.second.title}")
+    }
+
+    private fun swapFeedOrders(feedOneUrl: String, feedTwoUrl: String) {
+        val twoFeeds = viewModel.getTwoFeeds(feedOneUrl, feedTwoUrl)
+        twoFeeds.observe(viewLifecycleOwner) { feedPair ->
+            if (feedPair == null) return@observe
+            twoFeeds.removeObservers(viewLifecycleOwner)
+            swapFeeds(feedPair)
+        }
     }
 }

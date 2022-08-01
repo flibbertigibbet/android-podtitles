@@ -2,18 +2,13 @@ package dev.banderkat.podtitles.feedlist
 
 import android.app.Application
 import android.text.format.Formatter
-import android.util.Log
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.database.getDatabase
 import dev.banderkat.podtitles.models.PodFeed
 import dev.banderkat.podtitles.workers.TranscriptMergeWorker.Companion.SUBTITLE_FILE_EXTENSION
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class FeedListViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
@@ -25,9 +20,38 @@ class FeedListViewModel(application: Application) : AndroidViewModel(application
 
     val feeds = database.podDao.getAllFeeds()
 
+    fun getTwoFeeds(feedOneUrl: String, feedTwoUrl: String): LiveData<Pair<PodFeed, PodFeed>> =
+        object : MediatorLiveData<Pair<PodFeed, PodFeed>>() {
+            var feedOne: PodFeed? = null
+            var feedTwo: PodFeed? = null
+
+            init {
+                addSource(getFeedByUrl(feedOneUrl)) {
+                    if (it != null) {
+                        feedOne = it
+                        this.removeSource(getFeedByUrl(feedOneUrl))
+                    }
+                    if (feedOne != null && feedTwo != null) value = Pair(feedOne!!, feedTwo!!)
+                }
+
+                addSource(getFeedByUrl(feedTwoUrl)) {
+                    if (it != null) {
+                        feedTwo = it
+                        this.removeSource(getFeedByUrl(feedTwoUrl))
+                    }
+                    if (feedOne != null && feedTwo != null) value = Pair(feedOne!!, feedTwo!!)
+                }
+            }
+        }
+
     fun getFeedByUrl(url: String) = database.podDao.getFeed(url)
 
-    fun updateFeed(feed: PodFeed) = database.podDao.updateFeed(feed)
+    fun updateFeedPair(feeds: Pair<PodFeed, PodFeed>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            database.podDao.updateFeed(feeds.first)
+            database.podDao.updateFeed(feeds.second)
+        }
+    }
 
     fun getTranscriptsSize(): String = Formatter.formatShortFileSize(app,
         app.fileList().fold(0) { acc, appFile ->
@@ -43,21 +67,20 @@ class FeedListViewModel(application: Application) : AndroidViewModel(application
         .formatShortFileSize(app, app.downloadCache.cacheSpace)
 
     fun deleteFiles() {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                app.downloadCache.apply {
-                    keys.forEach { cacheKey ->
-                        removeResource(cacheKey)
-                    }
+        viewModelScope.launch(Dispatchers.IO) {
+            app.downloadCache.apply {
+                keys.forEach { cacheKey ->
+                    removeResource(cacheKey)
                 }
+            }
 
-                app.fileList().forEach { appFile ->
-                    if (appFile.endsWith(SUBTITLE_FILE_EXTENSION, true)) {
-                        app.deleteFile(appFile)
-                    }
+            app.fileList().forEach { appFile ->
+                if (appFile.endsWith(SUBTITLE_FILE_EXTENSION, true)) {
+                    app.deleteFile(appFile)
                 }
             }
         }
+
     }
 
     class Factory(val app: Application) : ViewModelProvider.Factory {

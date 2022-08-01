@@ -39,7 +39,7 @@ class FetchFeed(
 
     private val database = getDatabase(context)
 
-    private val maxValObserver = Observer<Int?> {
+    private val maxValObserver = Observer<Int> {
         fetchPodcast((it + 1))
     }
 
