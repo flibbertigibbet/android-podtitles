@@ -67,7 +67,7 @@ class TranscribeWorker(appContext: Context, workerParams: WorkerParameters) :
                 supervisorScope {
                     val outputPath = recognize(inputPath, modelPath)
                     Result.success(
-                        Data(mapOf(SUBTITLE_FILE_PATH_PARAM to "$outputPath|$duration"))
+                        Data.Builder().putString(SUBTITLE_FILE_PATH_PARAM, "$outputPath|$duration").build()
                     )
                 }
             } catch (ex: Exception) {

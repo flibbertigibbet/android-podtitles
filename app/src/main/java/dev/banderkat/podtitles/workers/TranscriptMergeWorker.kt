@@ -71,7 +71,9 @@ class TranscriptMergeWorker(appContext: Context, workerParams: WorkerParameters)
                 }.sortedBy { it.position }
 
                 val outputPath = mergeTranscripts(chunks)
-                Result.success(Data(ImmutableMap.of(SUBTITLE_FILE_PATH_PARAM, outputPath)))
+                Result.success(
+                    Data.Builder().putString(SUBTITLE_FILE_PATH_PARAM, outputPath).build()
+                )
             } catch (ex: Exception) {
                 Log.e(TAG, "Transcription file merge failed", ex)
                 Result.failure()
