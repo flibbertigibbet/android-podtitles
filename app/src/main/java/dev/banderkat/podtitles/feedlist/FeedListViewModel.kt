@@ -2,6 +2,7 @@ package dev.banderkat.podtitles.feedlist
 
 import android.app.Application
 import android.text.format.Formatter
+import android.util.Log
 import androidx.lifecycle.*
 import dev.banderkat.podtitles.PodTitlesApplication
 import dev.banderkat.podtitles.database.getDatabase
@@ -50,6 +51,7 @@ class FeedListViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) {
             database.podDao.updateFeed(feeds.first)
             database.podDao.updateFeed(feeds.second)
+            Log.d(FeedListFragment.TAG, "updated in DB feeds: ${feeds.first.title} (now at ${feeds.first.displayOrder}) and ${feeds.second.title} (now at ${feeds.second.displayOrder})")
         }
     }
 
