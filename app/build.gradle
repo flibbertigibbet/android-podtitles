@@ -23,6 +23,14 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
+    buildFeatures {
+        compose true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.4.2"
+    }
+
     buildTypes {
         release {
             minifyEnabled true
