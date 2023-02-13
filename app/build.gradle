@@ -105,6 +105,25 @@ dependencies {
     // for CircularDrawable
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
 
+    // Jetpack Compose
+    def composeBom = platform('androidx.compose:compose-bom:2022.12.00')
+    implementation composeBom
+    androidTestImplementation composeBom
+    implementation 'androidx.compose.material3:material3'
+
+    // Android Studio Preview support
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+
+    // Optional - Integration with activities
+    implementation 'androidx.activity:activity-compose:1.6.1'
+    // Optional - Integration with ViewModels
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1'
+    // Optional - Integration with LiveData
+    implementation 'androidx.compose.runtime:runtime-livedata'
+    // Optional - Integration with RxJava
+    implementation 'androidx.compose.runtime:runtime-rxjava2'
+
     implementation "androidx.core:core-ktx:1.9.0"
     implementation "androidx.appcompat:appcompat:1.6.1"
     implementation "com.google.android.material:material:1.8.0"
@@ -128,4 +147,6 @@ dependencies {
     // Utilities for testing media components (including ExoPlayer components) via Robolectric
     implementation "androidx.media3:media3-test-utils-robolectric:$media3_version"
     testImplementation "androidx.room:room-testing:$room_version"
+    androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
+    debugImplementation 'androidx.compose.ui:ui-test-manifest'
 }
