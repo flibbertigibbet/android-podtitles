@@ -117,12 +117,14 @@ class EpisodeFragment : Fragment() {
 
         requireActivity().registerReceiver(
             downloadCompleteBroadcast,
-            IntentFilter(DOWNLOAD_FINISHED_ACTION)
+            IntentFilter(DOWNLOAD_FINISHED_ACTION),
+            Context.RECEIVER_NOT_EXPORTED
         )
 
         requireActivity().registerReceiver(
             downloadFailedBroadcast,
-            IntentFilter(DOWNLOAD_FAILED_ACTION)
+            IntentFilter(DOWNLOAD_FAILED_ACTION),
+            Context.RECEIVER_NOT_EXPORTED
         )
 
         return root
@@ -367,8 +369,10 @@ class EpisodeFragment : Fragment() {
                     Log.w(TAG, "No transcript model selected")
                     return@observe
                 }
+
+                val spans = app.downloadCache.getCachedSpans(episode.url)
                 val subtitleFilePath = Utils.getSubtitlePathForCachePath(
-                    app.downloadCache.getCachedSpans(episode.url).first().file!!.absolutePath
+                    spans.first().file!!.absolutePath
                 )
 
                 viewModel.setSubtitlePath(subtitleFilePath)
