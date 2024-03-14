@@ -22,7 +22,7 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
     private val database = getDatabase(application)
     private val workManager: WorkManager = WorkManager.getInstance(application.applicationContext)
     private var searchWorkers: LiveData<WorkInfo>? = null
-    private val searchObserver = Observer<WorkInfo> { workInfo ->
+    private val searchObserver = Observer<WorkInfo?> { workInfo ->
         when (workInfo?.state) {
             WorkInfo.State.SUCCEEDED -> {
                 Log.d(TAG, "Successfully got search results")

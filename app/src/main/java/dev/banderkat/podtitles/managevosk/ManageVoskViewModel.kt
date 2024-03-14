@@ -53,7 +53,7 @@ class ManageVoskViewModel(application: Application) : AndroidViewModel(applicati
     /**
      * Transforms the Vosk models fetched from the DB to set the field indicating if it is downloaded.
      */
-    val voskModels = Transformations.map(database.podDao.getVoskModels()) { models ->
+    val voskModels = database.podDao.getVoskModels().map { models ->
         val downloadedVoskModels = Utils.getDownloadedVoskModels(application)
         models.map { model ->
             model.isDownloaded = model.name in downloadedVoskModels

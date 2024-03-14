@@ -8,6 +8,7 @@
     <!-- for workers -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
 
     <application
         android:name=".PodTitlesApplication"
@@ -18,8 +19,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.PodTitles"
-        tools:targetApi="32">
+        android:theme="@style/Theme.PodTitles">
         <activity
             android:name=".ui.MainActivity"
             android:exported="true">
@@ -33,6 +33,7 @@
         </activity>
         <service
             android:name=".player.PodTitlesDownloadService"
+            android:foregroundServiceType="dataSync"
             android:exported="false">
 
             <!-- This is needed for Scheduler -->
