@@ -9,15 +9,17 @@ import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.NoOpCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.offline.DownloadManager
+import androidx.work.Configuration
 import dev.banderkat.podtitles.player.DOWNLOAD_CONTENT_DIRECTORY
 import okhttp3.OkHttpClient
 import java.io.File
 import java.net.CookieHandler
 import java.net.CookieManager
 import java.net.CookiePolicy
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-class PodTitlesApplication : Application() {
+class PodTitlesApplication : Application(), Configuration.Provider {
     companion object {
         const val HTTP_CACHE_DIR = "http_cache"
         const val CACHE_MAX_SIZE = 50L * 1024L * 1024L // 50 MiB
@@ -91,5 +93,12 @@ class PodTitlesApplication : Application() {
             )
             .setCacheWriteDataSinkFactory(null)
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+
+    // Custom WorkManager config
+    // https://developer.android.com/develop/background-work/background-tasks/persistent/configuration/custom-configuration
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setExecutor(Executors.newFixedThreadPool(1))
+            .build()
 }
 
